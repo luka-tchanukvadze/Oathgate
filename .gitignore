@@ -1,0 +1,28 @@
+# deps
+node_modules/
+
+# build output
+dist/
+build/
+.next/
+
+# env and secrets, never commit these
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# logs
+logs/
+*.log
+npm-debug.log*
+
+# test output
+coverage/
+
+# editor / os
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
