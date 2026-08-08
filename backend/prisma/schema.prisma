@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -10,4 +8,230 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// Money rules for this file. Every amount is a whole number in the currency's
+// smallest unit, 10.50 GEL is 1050, and always sits next to its own currency.
+// Decimal(38, 0) rather than BigInt because BigInt overflows around 9 ETH, see
+// decisions.md 011. Timestamps are Timestamptz, Prisma's default DateTime has
+// no timezone
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMING
+  PAID
+  UNDERPAID
+  EXPIRED
+  REVERSED
+  FAILED
+}
+
+// Test rows and live rows never mix in a query
+enum KeyMode {
+  TEST
+  LIVE
+}
+
+enum EntryDirection {
+  DEBIT
+  CREDIT
+}
+
+model Merchant {
+  id    String @id @default(uuid(7)) @db.Uuid
+  email String @unique
+  name  String
+
+  // What I pay them out in
+  settlementCurrency String @db.VarChar(10)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  payments        Payment[]
+  accounts        Account[]
+  apiKeys         ApiKey[]
+  idempotencyKeys IdempotencyKey[]
+
+  @@map("merchant")
+}
+
+model Payment {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  merchantId String   @db.Uuid
+  merchant   Merchant @relation(fields: [merchantId], references: [id])
+
+  // Null when the dashboard created it with a JWT instead of a key
+  apiKeyId String? @db.Uuid
+  apiKey   ApiKey? @relation(fields: [apiKeyId], references: [id])
+
+  // Copied off the key, not joined to it. A payment must never become ambiguous
+  // about whether it was real money, and keys get revoked
+  mode KeyMode
+
+  fiatAmount   Decimal @db.Decimal(38, 0)
+  fiatCurrency String  @db.VarChar(10)
+
+  cryptoAmount   Decimal @db.Decimal(38, 0)
+  cryptoCurrency String  @db.VarChar(10)
+
+  // A rate is a ratio, not money, so this one keeps decimal places. Still
+  // Decimal and never Float
+  quotedRate Decimal @db.Decimal(38, 18)
+
+  address         String
+  // Which index I derived the address at, so I can rebuild it from the xpub
+  derivationIndex Int
+
+  status    PaymentStatus @default(PENDING)
+  expiresAt DateTime      @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  chainTxs      ChainTx[]
+  ledgerEntries LedgerEntry[]
+
+  @@unique([address])
+  @@index([status, expiresAt])
+  @@index([merchantId, mode, createdAt])
+  @@map("payment")
+}
+
+// One row per transaction seen on chain. Its own table because one address can
+// receive several transactions, so underpaid and overpaid fall out of a SUM
+// instead of needing special cases
+model ChainTx {
+  id        String  @id @default(uuid(7)) @db.Uuid
+  paymentId String  @db.Uuid
+  payment   Payment @relation(fields: [paymentId], references: [id])
+
+  txid String
+
+  // Null until mined. Kept so I can spot a reorg: if the chain later disagrees
+  // about this block, the payment is not real
+  blockHash String?
+
+  amount   Decimal @db.Decimal(38, 0)
+  currency String  @db.VarChar(10)
+
+  confirmations Int @default(0)
+
+  seenAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  // The worker polls in a loop and will see the same tx every time. Without
+  // this, each poll inserts another row and the SUM double-credits
+  @@unique([txid, paymentId])
+  @@index([paymentId])
+  @@map("chain_tx")
+}
+
+// Cached projection, NOT the truth. The truth is the sum of this account's
+// ledger entries, and I have to be able to rebuild this column from them
+model Account {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  merchantId String   @db.Uuid
+  merchant   Merchant @relation(fields: [merchantId], references: [id])
+
+  currency String  @db.VarChar(10)
+  mode     KeyMode
+
+  balance Decimal @default(0) @db.Decimal(38, 0)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  entries LedgerEntry[]
+
+  // This is the row I lock with SELECT ... FOR UPDATE when settling, so there
+  // has to be exactly one per merchant per currency per mode
+  @@unique([merchantId, currency, mode])
+  @@map("account")
+}
+
+// Append only. Never UPDATE, never DELETE. To undo a reorg or a refund I write
+// a new pair that cancels the old one and points back at it
+model LedgerEntry {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  // Both halves of one movement share this, and a group must sum to zero
+  transferId String @db.Uuid
+
+  accountId String  @db.Uuid
+  account   Account @relation(fields: [accountId], references: [id])
+
+  // Always positive. Direction carries the sign so it cannot go missing, see
+  // decisions.md 012
+  direction EntryDirection
+  amount    Decimal        @db.Decimal(38, 0)
+  currency  String         @db.VarChar(10)
+
+  paymentId String?  @db.Uuid
+  payment   Payment? @relation(fields: [paymentId], references: [id])
+
+  // Unique because an entry can only be reversed once
+  reversesId String?      @unique @db.Uuid
+  reverses   LedgerEntry? @relation("EntryReversal", fields: [reversesId], references: [id])
+  reversedBy LedgerEntry? @relation("EntryReversal")
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([accountId, createdAt])
+  @@index([transferId])
+  @@index([paymentId])
+  @@map("ledger_entry")
+}
+
+model ApiKey {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  merchantId String   @db.Uuid
+  merchant   Merchant @relation(fields: [merchantId], references: [id])
+
+  // SHA-256 hex, not bcrypt, see decisions.md 013
+  keyHash   String @unique @db.Char(64)
+  // Plain, like sk_test_a1b2c3d4. The full key is shown once and never again
+  keyPrefix String @db.VarChar(24)
+
+  mode KeyMode
+  name String
+
+  lastUsedAt DateTime? @db.Timestamptz(3)
+
+  // Null means active. Revoking never deletes, because payments made with this
+  // key still need explaining afterwards
+  revokedAt DateTime? @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  payments Payment[]
+
+  @@index([merchantId, mode])
+  @@map("api_key")
+}
+
+// Stops a retried request creating a second payment. First response is stored
+// and replayed
+model IdempotencyKey {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  merchantId String   @db.Uuid
+  merchant   Merchant @relation(fields: [merchantId], references: [id])
+
+  key String @db.VarChar(255)
+
+  // Same key and same body means replay. Same key with a different body means
+  // the client has a bug, so that returns an error instead of someone else's
+  // response
+  requestHash String @db.Char(64)
+
+  responseStatus Int
+  responseBody   Json @db.JsonB
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  expiresAt DateTime @db.Timestamptz(3)
+
+  // Scoped to the merchant. Two merchants both sending "order-1" is normal
+  @@unique([merchantId, key])
+  @@index([expiresAt])
+  @@map("idempotency_key")
 }
