@@ -1,0 +1,169 @@
+@import 'tailwindcss';
+
+/* Cobalt on warm white. One light theme, no switcher
+   Blue is what people pattern-match to "trusted financial product", so it is
+   the brand. The canvas is a warm off-white rather than a cold grey, which is
+   what keeps it from looking like every other Stripe clone */
+
+:root {
+  --canvas: #fafaf9;
+  --surface: #ffffff;
+  --surface-muted: #f5f5f4;
+  --surface-sunken: #f0efed;
+
+  --line: #e7e5e4;
+  --line-strong: #d6d3d1;
+
+  /* Four steps of ink. Hierarchy comes from these and from whitespace, never
+     from decorative colour */
+  --ink: #0a2540;
+  --ink-muted: #3a4759;
+  /* Both of these carry real information, so both clear 4.5:1 on the canvas.
+     The old faint was #94a3b8 at about 2.8:1, which failed for timestamps and
+     chart labels. Anything genuinely decorative uses ink-faint, anything a
+     reader needs uses ink-subtle */
+  --ink-subtle: #55637a;
+  --ink-faint: #6c7a8d;
+
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-soft: #eff6ff;
+  --accent-line: #bfdbfe;
+  --on-accent: #ffffff;
+
+  /* Status. Note CONFIRMING is cyan and not blue: the brand is cobalt, so a
+     blue badge would read as a link rather than a state. Six distinct hues,
+     none of them the accent */
+  --ok-fg: #047857;
+  --ok-bg: #d1fae5;
+  --warn-fg: #b45309;
+  --warn-bg: #fef3c7;
+  --info-fg: #0e7490;
+  --info-bg: #cffafe;
+  --bad-fg: #b91c1c;
+  --bad-bg: #fee2e2;
+  --neutral-fg: #57534e;
+  --neutral-bg: #ececea;
+  --special-fg: #6d28d9;
+  --special-bg: #ede9fe;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-ink-faint: var(--ink-faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-line: var(--accent-line);
+  --color-on-accent: var(--on-accent);
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+
+  /* 2xs is for badges and nothing else. Everything a reader has to read starts
+     at xs, and body copy is sm */
+  --text-2xs: 0.6875rem;
+  --text-xs: 0.8125rem;
+  --text-sm: 0.875rem;
+  --text-base: 0.9375rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 1.875rem;
+  --text-3xl: 2.5rem;
+
+  --radius-tile: 0.875rem;
+  --radius-card: 0.625rem;
+}
+
+@layer base {
+  * {
+    border-color: var(--line);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Ids, hashes and amounts. Tabular figures keep columns aligned so a wrong
+     digit is easy to spot */
+  .mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.012em;
+  }
+
+  .num {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.015em;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: var(--accent-soft);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar {
+    height: 6px;
+    width: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: var(--line-strong);
+    border-radius: 9999px;
+  }
+
+  /* Depth comes from a hairline plus a very soft shadow, not from a hard
+     border. Hard borders on a dense table make it look like a spreadsheet */
+  .shadow-card {
+    box-shadow:
+      0 0 0 1px rgba(10, 37, 64, 0.06),
+      0 1px 2px rgba(10, 37, 64, 0.04);
+  }
+
+  .shadow-tile {
+    box-shadow:
+      0 0 0 1px rgba(10, 37, 64, 0.05),
+      0 1px 3px rgba(10, 37, 64, 0.04),
+      0 6px 16px -8px rgba(10, 37, 64, 0.08);
+  }
+
+  .shadow-pop {
+    box-shadow:
+      0 0 0 1px rgba(10, 37, 64, 0.08),
+      0 12px 32px -8px rgba(10, 37, 64, 0.18);
+  }
+}
