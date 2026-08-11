@@ -4,6 +4,10 @@
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
+
+  // The generator emits ESM by default and this app compiles to CommonJS, which
+  // showed up as import.meta.url landing inside a require() file
+  moduleFormat = "cjs"
 }
 
 datasource db {
