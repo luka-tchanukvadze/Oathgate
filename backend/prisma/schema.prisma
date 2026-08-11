@@ -12,9 +12,8 @@ datasource db {
 
 // Money rules for this file. Every amount is a whole number in the currency's
 // smallest unit, 10.50 GEL is 1050, and always sits next to its own currency.
-// Decimal(38, 0) rather than BigInt because BigInt overflows around 9 ETH, see
-// decisions.md 011. Timestamps are Timestamptz, Prisma's default DateTime has
-// no timezone
+// Decimal(38, 0) rather than BigInt because BigInt overflows around 9 ETH.
+// Timestamps are Timestamptz, Prisma's default DateTime has no timezone
 
 enum PaymentStatus {
   PENDING
@@ -37,10 +36,21 @@ enum EntryDirection {
   CREDIT
 }
 
+// A merchant balance is money I owe, not money I hold
+enum AccountKind {
+  MERCHANT_BALANCE
+  GATEWAY_WALLET
+  FEES
+}
+
 model Merchant {
   id    String @id @default(uuid(7)) @db.Uuid
   email String @unique
   name  String
+
+  // argon2id, not SHA-256 like the API keys. A key is random bytes I look up by
+  // hash, a password is a human word I only ever compare against one known row
+  passwordHash String
 
   // What I pay them out in
   settlementCurrency String @db.VarChar(10)
@@ -52,6 +62,7 @@ model Merchant {
   accounts        Account[]
   apiKeys         ApiKey[]
   idempotencyKeys IdempotencyKey[]
+  sessions        MerchantSession[]
 
   @@map("merchant")
 }
@@ -68,6 +79,9 @@ model Payment {
   // Copied off the key, not joined to it. A payment must never become ambiguous
   // about whether it was real money, and keys get revoked
   mode KeyMode
+
+  // Their order number, not mine. I never interpret it
+  reference String? @db.VarChar(64)
 
   fiatAmount   Decimal @db.Decimal(38, 0)
   fiatCurrency String  @db.VarChar(10)
@@ -95,6 +109,8 @@ model Payment {
   @@unique([address])
   @@index([status, expiresAt])
   @@index([merchantId, mode, createdAt])
+  // Not unique. One order can need a second payment after the first expires
+  @@index([merchantId, mode, reference])
   @@map("payment")
 }
 
@@ -130,9 +146,15 @@ model ChainTx {
 // Cached projection, NOT the truth. The truth is the sum of this account's
 // ledger entries, and I have to be able to rebuild this column from them
 model Account {
-  id         String   @id @default(uuid(7)) @db.Uuid
-  merchantId String   @db.Uuid
-  merchant   Merchant @relation(fields: [merchantId], references: [id])
+  id String @id @default(uuid(7)) @db.Uuid
+
+  // Null on a house account, which is the far side of every merchant movement.
+  // Restrict, because the optional-relation default is SET NULL and that would
+  // turn a merchant's balance into an ownerless row
+  merchantId String?   @db.Uuid
+  merchant   Merchant? @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+
+  kind AccountKind
 
   currency String  @db.VarChar(10)
   mode     KeyMode
@@ -144,9 +166,9 @@ model Account {
 
   entries LedgerEntry[]
 
-  // This is the row I lock with SELECT ... FOR UPDATE when settling, so there
-  // has to be exactly one per merchant per currency per mode
-  @@unique([merchantId, currency, mode])
+  // The row I lock with SELECT ... FOR UPDATE when settling. NULLs count as
+  // distinct, so the house rows need a partial index instead
+  @@unique([merchantId, currency, mode, kind])
   @@map("account")
 }
 
@@ -161,8 +183,7 @@ model LedgerEntry {
   accountId String  @db.Uuid
   account   Account @relation(fields: [accountId], references: [id])
 
-  // Always positive. Direction carries the sign so it cannot go missing, see
-  // decisions.md 012
+  // Always positive. Direction carries the sign so it cannot go missing
   direction EntryDirection
   amount    Decimal        @db.Decimal(38, 0)
   currency  String         @db.VarChar(10)
@@ -188,7 +209,7 @@ model ApiKey {
   merchantId String   @db.Uuid
   merchant   Merchant @relation(fields: [merchantId], references: [id])
 
-  // SHA-256 hex, not bcrypt, see decisions.md 013
+  // SHA-256 hex, not bcrypt. A random salt would mean no index and a table scan
   keyHash   String @unique @db.Char(64)
   // Plain, like sk_test_a1b2c3d4. The full key is shown once and never again
   keyPrefix String @db.VarChar(24)
@@ -208,6 +229,46 @@ model ApiKey {
 
   @@index([merchantId, mode])
   @@map("api_key")
+}
+
+// Rows go in the same transaction as the ledger, so a crash cannot lose an event
+model OutboxEvent {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  // Columns, not payload fields, so a consumer can route without parsing JSON
+  aggregateType String @db.VarChar(40)
+  aggregateId   String @db.Uuid
+  eventType     String @db.VarChar(60)
+
+  payload Json @db.JsonB
+
+  // Null means not published yet, which is what the relay polls for
+  publishedAt DateTime? @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([publishedAt, createdAt])
+  @@index([aggregateType, aggregateId])
+  @@map("outbox_event")
+}
+
+// Dashboard login. A row rather than a signed token, so I can revoke one
+model MerchantSession {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  merchantId String   @db.Uuid
+  merchant   Merchant @relation(fields: [merchantId], references: [id])
+
+  // SHA-256 of what is in the cookie, same reasoning as the API keys
+  tokenHash String @unique @db.Char(64)
+
+  expiresAt DateTime  @db.Timestamptz(3)
+  revokedAt DateTime? @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([merchantId])
+  @@index([expiresAt])
+  @@map("merchant_session")
 }
 
 // Stops a retried request creating a second payment. First response is stored
