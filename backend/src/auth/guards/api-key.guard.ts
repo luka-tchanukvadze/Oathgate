@@ -9,8 +9,8 @@ import {
 import type { Request } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
 
-// Refreshing lastUsedAt on every call would double the writes on this table for
-// a column nobody reads in real time
+// 5 minutes. Refreshing lastUsedAt on every call would double the writes on
+// this table for a column nobody reads in real time
 const LAST_USED_STALE_MS = 5 * 60 * 1000;
 
 function readBearerToken(header: string | undefined): string | null {

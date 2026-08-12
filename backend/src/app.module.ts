@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { OriginGuard } from './auth/guards/origin.guard';
 import { PingModule } from './ping/ping.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { RatesModule } from './rates/rates.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { PrismaModule } from './prisma/prisma.module';
     PrismaModule,
     AuthModule,
     PingModule,
+    RatesModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: OriginGuard }],

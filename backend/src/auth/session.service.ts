@@ -6,8 +6,8 @@ import type { AuthenticatedSession } from './auth.types';
 
 export const SESSION_COOKIE = 'oathgate_session';
 
-// Twelve hours, and it does not slide. One column instead of two, and logging
-// in again is cheap
+// 12 hours, and it does not slide. One column instead of two, and logging in
+// again is cheap
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 
 function sha256(value: string): string {
