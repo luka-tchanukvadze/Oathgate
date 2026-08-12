@@ -1,7 +1,7 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { ApiKeyGuard } from '../auth/api-key.guard';
-import { CurrentMerchant } from '../auth/current-merchant.decorator';
-import type { AuthenticatedMerchant } from '../auth/authenticated-merchant';
+import { ApiKeyGuard } from '../auth/guards/api-key.guard';
+import { CurrentMerchant } from '../auth/decorators/current-merchant.decorator';
+import type { AuthenticatedMerchant } from '../auth/auth.types';
 
 @Controller('v1/ping')
 @UseGuards(ApiKeyGuard)

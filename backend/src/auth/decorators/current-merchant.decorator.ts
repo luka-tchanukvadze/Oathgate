@@ -1,6 +1,6 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import type { Request } from 'express';
-import type { AuthenticatedMerchant } from './authenticated-merchant';
+import type { AuthenticatedMerchant } from '../auth.types';
 
 // Throws rather than handing back undefined, so a controller can never quietly
 // run unauthenticated because I forgot the guard on it
