@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { OriginGuard } from './auth/guards/origin.guard';
+import { PaymentsModule } from './payments/payments.module';
 import { PingModule } from './ping/ping.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RatesModule } from './rates/rates.module';
@@ -18,6 +19,7 @@ import { RatesModule } from './rates/rates.module';
     AuthModule,
     PingModule,
     RatesModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: OriginGuard }],
