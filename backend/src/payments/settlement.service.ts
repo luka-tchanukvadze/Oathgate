@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   AccountKind,
   EntryDirection,
@@ -11,6 +16,14 @@ import { LedgerService } from '../ledger/ledger.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 type Tx = Prisma.TransactionClient;
+
+// Anything else is either already done or a dead end. Whether a late payment
+// against an expired quote should settle is still an open question, so for now
+// it refuses loudly rather than guessing
+const SETTLEABLE: PaymentStatus[] = [
+  PaymentStatus.PENDING,
+  PaymentStatus.CONFIRMING,
+];
 
 export interface SettleResult {
   payment: Payment;
@@ -35,6 +48,12 @@ export class SettlementService {
       // can only ever see it once the money has actually landed
       if (payment.status === PaymentStatus.PAID) {
         return { payment, alreadySettled: true };
+      }
+
+      if (!SETTLEABLE.includes(payment.status)) {
+        throw new ConflictException(
+          `payment is ${payment.status} and cannot be settled`,
+        );
       }
 
       const amount = BigInt(payment.cryptoAmount.toFixed(0));
