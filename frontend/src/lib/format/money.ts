@@ -73,8 +73,10 @@ export function formatFiatWithCurrency(minor: MinorUnits, currency: string): str
 export function formatCrypto(minor: MinorUnits, currency: string): string {
   const decimals = cryptoDecimals(currency);
   const { whole, frac, negative } = shift(minor, decimals);
+  // padEnd never returns an empty string, so the decimals check has to come
+  // first or a currency with no decimal places would render as 123.00
   const trimmed = frac.replace(/0+$/, '').padEnd(2, '0');
-  const body = trimmed.length > 0 ? `${group(whole)}.${trimmed}` : group(whole);
+  const body = decimals > 0 ? `${group(whole)}.${trimmed}` : group(whole);
   return `${negative ? '-' : ''}${body}`;
 }
 

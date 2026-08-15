@@ -4,8 +4,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Menu, Search, X } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { SidebarNav } from './sidebar';
 import { Logo } from './logo';
+import { AccountMenu } from './account-menu';
+import { getMerchant } from '@/lib/api/merchant';
+import { queryKeys } from '@/lib/api/queryKeys';
 import { ModeToggle } from '@/components/ui/mode-toggle';
 import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -13,6 +17,10 @@ import { useMode } from '@/hooks/use-mode';
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { mode } = useMode();
+  const { data: merchant } = useQuery({
+    queryKey: queryKeys.merchant(),
+    queryFn: getMerchant,
+  });
   const [navOpen, setNavOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [liveInfo, setLiveInfo] = useState(false);
@@ -143,12 +151,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
                 <ModeToggle mode={mode} onLockedClick={() => setLiveInfo(true)} />
 
-                <span
-                  aria-hidden
-                  className="hidden size-7 place-items-center rounded-full bg-ink text-2xs font-semibold text-on-accent sm:grid"
-                >
-                  DC
-                </span>
+                <div className="hidden sm:block">
+                  <AccountMenu
+                    name={merchant?.name ?? 'Merchant'}
+                    email={merchant?.email ?? ''}
+                  />
+                </div>
               </div>
             </div>
           </header>

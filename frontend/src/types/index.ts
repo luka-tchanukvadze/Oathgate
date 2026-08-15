@@ -121,9 +121,11 @@ export interface Insight {
   tone: 'neutral' | 'good' | 'warn';
 }
 
-export interface Paginated<T> {
+// hasMore, not a total. The API pages by cursor and never counts the whole
+// table, so there is no total to report
+export interface Page<T> {
   data: T[];
-  total: number;
+  hasMore: boolean;
 }
 
 // The developer log. This is where everything the plan calls invisible actually
