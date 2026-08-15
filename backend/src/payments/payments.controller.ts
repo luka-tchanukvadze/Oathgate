@@ -3,11 +3,13 @@ import {
   Body,
   Controller,
   ForbiddenException,
+  Get,
   Headers,
   HttpCode,
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import type { AuthenticatedMerchant } from '../auth/auth.types';
@@ -17,6 +19,7 @@ import { KeyMode } from '../generated/prisma/client';
 import { IdempotencyService } from '../idempotency/idempotency.service';
 import { hashRequest } from '../idempotency/request-hash';
 import { CreatePaymentDto } from './dto/create-payment.dto';
+import { ListPaymentsDto } from './dto/list-payments.dto';
 import { toPaymentResponse } from './payment.response';
 import { PaymentsService } from './payments.service';
 import { SettlementService } from './settlement.service';
@@ -55,6 +58,36 @@ export class PaymentsController {
       handler: async () =>
         toPaymentResponse(await this.payments.create(merchant, dto)),
     });
+  }
+
+  @Get()
+  async list(
+    @CurrentMerchant() merchant: AuthenticatedMerchant,
+    @Query() query: ListPaymentsDto,
+  ) {
+    const page = await this.payments.list(
+      merchant.merchantId,
+      merchant.mode,
+      query,
+    );
+
+    return { data: page.data.map(toPaymentResponse), hasMore: page.hasMore };
+  }
+
+  // Declared after the literal routes above, because Nest matches in the order
+  // the handlers appear and :id would otherwise swallow them
+  @Get(':id')
+  async get(
+    @CurrentMerchant() merchant: AuthenticatedMerchant,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    const payment = await this.payments.get(
+      merchant.merchantId,
+      merchant.mode,
+      id,
+    );
+
+    return toPaymentResponse(payment);
   }
 
   // Stands in for the chain until phase 4 watches a real one. Test mode only:

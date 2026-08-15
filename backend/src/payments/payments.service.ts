@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import type { AuthenticatedMerchant } from '../auth/auth.types';
+import type { Page } from '../common/page';
 import { KeyMode, type Payment } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { QuoteService } from '../rates/quote.service';
 import { placeholderAddress } from './address';
 import { CreatePaymentDto } from './dto/create-payment.dto';
+import { DEFAULT_LIMIT, ListPaymentsDto } from './dto/list-payments.dto';
 
 // Named here rather than built from the mode, so the value reaching raw SQL can
 // only ever be one of these two strings
@@ -51,6 +53,49 @@ export class PaymentsService {
         expiresAt: quote.expiresAt,
       },
     });
+  }
+
+  // merchantId and mode together, always. Either one alone is a bug: without
+  // the merchant a caller reads somebody else's payments, without the mode a
+  // live dashboard shows test money
+  async list(
+    merchantId: string,
+    mode: KeyMode,
+    query: ListPaymentsDto,
+  ): Promise<Page<Payment>> {
+    const limit = query.limit ?? DEFAULT_LIMIT;
+
+    const rows = await this.prisma.payment.findMany({
+      where: {
+        merchantId,
+        mode,
+        ...(query.status ? { status: query.status } : {}),
+        ...(query.reference ? { reference: query.reference } : {}),
+        // Ids are UUIDv7, so "older than the last one seen" is just "smaller"
+        ...(query.startingAfter ? { id: { lt: query.startingAfter } } : {}),
+      },
+      orderBy: { id: 'desc' },
+      // One more than asked for. If it comes back there is another page, which
+      // saves running a COUNT over the whole table to find that out
+      take: limit + 1,
+    });
+
+    return { data: rows.slice(0, limit), hasMore: rows.length > limit };
+  }
+
+  // findFirst rather than findUnique, because the id alone is not the filter.
+  // A payment that belongs to someone else is a 404, not a 403, since a 403
+  // would confirm the id is real
+  async get(merchantId: string, mode: KeyMode, id: string): Promise<Payment> {
+    const payment = await this.prisma.payment.findFirst({
+      where: { id, merchantId, mode },
+    });
+
+    if (!payment) {
+      throw new NotFoundException('payment not found');
+    }
+
+    return payment;
   }
 
   // Counting existing rows and adding one hands the same number to two
