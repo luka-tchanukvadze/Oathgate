@@ -62,11 +62,13 @@ model Merchant {
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
-  payments        Payment[]
-  accounts        Account[]
-  apiKeys         ApiKey[]
-  idempotencyKeys IdempotencyKey[]
-  sessions        MerchantSession[]
+  payments          Payment[]
+  accounts          Account[]
+  apiKeys           ApiKey[]
+  idempotencyKeys   IdempotencyKey[]
+  sessions          MerchantSession[]
+  webhookEndpoints  WebhookEndpoint[]
+  webhookDeliveries WebhookDelivery[]
 
   @@map("merchant")
 }
@@ -251,6 +253,8 @@ model OutboxEvent {
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
 
+  webhookDeliveries WebhookDelivery[]
+
   @@index([publishedAt, createdAt])
   @@index([aggregateType, aggregateId])
   @@map("outbox_event")
@@ -299,4 +303,112 @@ model IdempotencyKey {
   @@unique([merchantId, key])
   @@index([expiresAt])
   @@map("idempotency_key")
+}
+
+// Where a merchant wants to be told. One per mode, because a shop points test
+// and live at different servers
+model WebhookEndpoint {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  merchantId String   @db.Uuid
+  merchant   Merchant @relation(fields: [merchantId], references: [id])
+
+  mode KeyMode
+  url  String @db.VarChar(2048)
+
+  // Encrypted, not hashed. I have to read this back to sign every webhook, and
+  // a hash is one way. Format is v1:iv:tag:ciphertext, all base64url, so the
+  // key can be rotated later without guessing how old rows were written
+  secretCiphertext String
+
+  // Plain, so the dashboard can name a secret it can no longer show
+  secretPrefix String @db.VarChar(24)
+
+  // Which events this endpoint wants. Empty means all of them
+  events String[]
+
+  // Null means active. Disabling never deletes, because the delivery history
+  // still points here
+  disabledAt DateTime? @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  deliveries WebhookDelivery[]
+
+  @@unique([merchantId, mode, url])
+  @@index([merchantId, mode])
+  @@map("webhook_endpoint")
+}
+
+enum WebhookDeliveryStatus {
+  PENDING
+  DELIVERED
+  FAILED
+  DEAD_LETTER
+}
+
+// One row per event per endpoint. The running state of trying to reach them
+model WebhookDelivery {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  merchantId String   @db.Uuid
+  merchant   Merchant @relation(fields: [merchantId], references: [id])
+
+  endpointId String          @db.Uuid
+  endpoint   WebhookEndpoint @relation(fields: [endpointId], references: [id])
+
+  // The outbox row this came from. Unique with the endpoint below, so a relay
+  // that runs twice cannot queue the same event to the same place twice
+  outboxEventId String      @db.Uuid
+  outboxEvent   OutboxEvent @relation(fields: [outboxEventId], references: [id])
+
+  mode      KeyMode
+  eventType String @db.VarChar(60)
+
+  // The exact body that was signed. Retries have to send the same bytes, or the
+  // merchant sees a different message each time under a valid signature
+  payload Json @db.JsonB
+
+  status   WebhookDeliveryStatus @default(PENDING)
+  attempts Int                   @default(0)
+
+  // Null when there is nothing more to try
+  nextAttemptAt DateTime? @db.Timestamptz(3)
+  deliveredAt   DateTime? @db.Timestamptz(3)
+
+  lastResponseStatus Int?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  webhookAttempts WebhookAttempt[]
+
+  @@unique([endpointId, outboxEventId])
+  // What the retry sweep reads
+  @@index([status, nextAttemptAt])
+  // merchantId and mode are copied off the endpoint on purpose. Every dashboard
+  // query filters on both, and this is the highest volume table in the system
+  @@index([merchantId, mode, createdAt])
+  @@map("webhook_delivery")
+}
+
+// One row per actual try. A counter on the delivery would say it failed four
+// times without ever saying how
+model WebhookAttempt {
+  id         String          @id @default(uuid(7)) @db.Uuid
+  deliveryId String          @db.Uuid
+  delivery   WebhookDelivery @relation(fields: [deliveryId], references: [id])
+
+  attempt Int
+
+  // Null when nothing answered at all, which is a timeout or a dead host
+  responseStatus Int?
+  error          String? @db.VarChar(500)
+
+  durationMs Int
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@unique([deliveryId, attempt])
+  @@index([deliveryId])
+  @@map("webhook_attempt")
 }
