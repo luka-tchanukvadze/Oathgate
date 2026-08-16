@@ -26,9 +26,10 @@ export class PrismaService
       adapter: new PrismaPg({ connectionString: url }),
     });
 
-    // Parsed rather than logged whole, the connection string carries a password
-    const { host, port, pathname } = new URL(url);
-    this.target = `${host}:${port}${pathname}`;
+    // Parsed rather than logged whole, the connection string carries a
+    // password. hostname and not host, because host already has the port on it
+    const { hostname, port, pathname } = new URL(url);
+    this.target = `${hostname}:${port}${pathname}`;
   }
 
   // Connecting at boot means a bad URL kills startup instead of the first payment
