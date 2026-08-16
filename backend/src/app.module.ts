@@ -10,6 +10,7 @@ import { OriginGuard } from './auth/guards/origin.guard';
 import { PaymentsModule } from './payments/payments.module';
 import { PingModule } from './ping/ping.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { QueueModule } from './queue/queue.module';
 import { RatesModule } from './rates/rates.module';
 
 @Module({
@@ -18,6 +19,7 @@ import { RatesModule } from './rates/rates.module';
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
     ScheduleModule.forRoot(),
     PrismaModule,
+    QueueModule,
     AuthModule,
     PingModule,
     RatesModule,
