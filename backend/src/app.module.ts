@@ -12,6 +12,7 @@ import { PingModule } from './ping/ping.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { QueueModule } from './queue/queue.module';
 import { RatesModule } from './rates/rates.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { RatesModule } from './rates/rates.module';
     PingModule,
     RatesModule,
     PaymentsModule,
+    WebhooksModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: OriginGuard }],
