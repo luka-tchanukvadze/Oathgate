@@ -246,6 +246,12 @@ model OutboxEvent {
   aggregateId   String @db.Uuid
   eventType     String @db.VarChar(60)
 
+  // Same reasoning, one step further. The relay has to find this merchant's
+  // endpoints in this mode, and a required routing field buried in JSON is one
+  // the database cannot enforce
+  merchantId String  @db.Uuid
+  mode       KeyMode
+
   payload Json @db.JsonB
 
   // Null means not published yet, which is what the relay polls for
