@@ -6,7 +6,7 @@ import {
   IsString,
   MaxLength,
 } from 'class-validator';
-import { KeyMode } from '../../generated/prisma/client';
+import { KeyMode } from '../../../generated/prisma/client';
 
 export class CreateEndpointDto {
   @IsEnum(KeyMode)

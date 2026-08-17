@@ -1,4 +1,4 @@
-import type { WebhookEndpoint } from '../generated/prisma/client';
+import type { WebhookEndpoint } from '../../generated/prisma/client';
 
 // secretCiphertext is deliberately absent. It is in the row, it is never in a
 // response, and the prefix is enough to tell two endpoints apart
