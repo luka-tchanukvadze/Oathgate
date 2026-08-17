@@ -103,6 +103,8 @@ export class SettlementService {
         data: {
           aggregateType: 'payment',
           aggregateId: paymentId,
+          merchantId,
+          mode: payment.mode,
           eventType: 'payment.completed',
           payload: {
             paymentId,
