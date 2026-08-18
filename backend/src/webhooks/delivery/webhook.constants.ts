@@ -13,9 +13,10 @@ export const SIGNATURE_HEADER = 'oathgate-signature';
 export const EVENT_HEADER = 'oathgate-event';
 export const DELIVERY_HEADER = 'oathgate-delivery';
 
-// The attempt number is part of the id on purpose. Redis refuses a duplicate id,
-// which is the dedupe I want between two sweeps ten seconds apart, but a genuine
-// next attempt has to be a different job or it would be refused too
-export function webhookJobId(deliveryId: string, attempts: number): string {
-  return `${deliveryId}:${attempts}`;
+// The row's version, not just its id. Redis refuses a duplicate job id, which is
+// exactly the dedupe I want between two sweeps ten seconds apart and while a
+// worker is mid-send. Anything that genuinely moves the delivery on, a recorded
+// attempt or a manual replay, changes updatedAt, so the next real try is a new job
+export function webhookJobId(deliveryId: string, updatedAt: Date): string {
+  return `${deliveryId}:${updatedAt.getTime()}`;
 }
