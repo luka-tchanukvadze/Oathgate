@@ -377,6 +377,11 @@ model WebhookDelivery {
   status   WebhookDeliveryStatus @default(PENDING)
   attempts Int                   @default(0)
 
+  // A budget rather than a constant, because a manual replay raises it. Resetting
+  // attempts to zero instead would collide with the attempt log's own numbering.
+  // The default is only here for rows that already existed, the relay sets it
+  maxAttempts Int @default(7)
+
   // Null when there is nothing more to try
   nextAttemptAt DateTime? @db.Timestamptz(3)
   deliveredAt   DateTime? @db.Timestamptz(3)
