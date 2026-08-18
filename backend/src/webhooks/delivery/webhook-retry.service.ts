@@ -4,12 +4,10 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { Queue } from 'bullmq';
 import { WebhookDeliveryStatus } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { WEBHOOK_JOB, WEBHOOK_QUEUE } from '../../queue/queue.constants';
-import { webhookJobId } from './webhook.constants';
+import { WEBHOOK_QUEUE } from '../../queue/queue.constants';
+import { enqueueDeliveries } from './enqueue';
 
 const BATCH_SIZE = 100;
-
-const ENQUEUE_TIMEOUT_MS = 5_000;
 
 @Injectable()
 export class WebhookRetryService {
@@ -33,7 +31,7 @@ export class WebhookRetryService {
         },
         orderBy: { nextAttemptAt: 'asc' },
         take: BATCH_SIZE,
-        select: { id: true, attempts: true },
+        select: { id: true, updatedAt: true },
       });
 
       if (due.length === 0) {
@@ -42,24 +40,7 @@ export class WebhookRetryService {
 
       // No status change here. The row stays PENDING until a worker actually
       // reports back, so a job lost between here and Redis is simply found again
-      await Promise.race([
-        this.queue.addBulk(
-          due.map((delivery) => ({
-            name: WEBHOOK_JOB,
-            data: { deliveryId: delivery.id },
-            opts: { jobId: webhookJobId(delivery.id, delivery.attempts) },
-          })),
-        ),
-        new Promise<never>((_, reject) =>
-          setTimeout(
-            () =>
-              reject(
-                new Error(`redis did not answer in ${ENQUEUE_TIMEOUT_MS}ms`),
-              ),
-            ENQUEUE_TIMEOUT_MS,
-          ),
-        ),
-      ]);
+      await enqueueDeliveries(this.queue, due);
 
       this.logger.log(`requeued ${due.length} webhook deliveries`);
     } catch (error) {

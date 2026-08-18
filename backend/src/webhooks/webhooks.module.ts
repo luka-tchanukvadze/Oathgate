@@ -7,11 +7,13 @@ import { WebhookRetryService } from './delivery/webhook-retry.service';
 import { WebhookSenderService } from './delivery/webhook-sender.service';
 import { DashboardWebhooksController } from './endpoints/dashboard-webhooks.controller';
 import { WebhooksService } from './endpoints/webhooks.service';
+import { DashboardDeliveriesController } from './log/dashboard-deliveries.controller';
+import { DeliveriesService } from './log/deliveries.service';
 import { SecretCipher } from './secret-cipher';
 
 @Module({
   imports: [AuthModule, QueueModule],
-  controllers: [DashboardWebhooksController],
+  controllers: [DashboardWebhooksController, DashboardDeliveriesController],
   providers: [
     WebhooksService,
     SecretCipher,
@@ -19,6 +21,7 @@ import { SecretCipher } from './secret-cipher';
     WebhookSenderService,
     WebhookProcessor,
     WebhookRetryService,
+    DeliveriesService,
   ],
   exports: [WebhooksService, SecretCipher],
 })

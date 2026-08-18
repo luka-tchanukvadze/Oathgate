@@ -7,7 +7,6 @@ import {
   BACKOFF_SECONDS,
   DELIVERY_HEADER,
   EVENT_HEADER,
-  MAX_ATTEMPTS,
   SEND_TIMEOUT_MS,
   SIGNATURE_HEADER,
 } from './webhook.constants';
@@ -69,7 +68,12 @@ export class WebhookSenderService {
       [DELIVERY_HEADER]: delivery.id,
     });
 
-    await this.record(delivery.id, delivery.attempts + 1, outcome);
+    await this.record(
+      delivery.id,
+      delivery.attempts + 1,
+      delivery.maxAttempts,
+      outcome,
+    );
   }
 
   private async post(
@@ -113,9 +117,12 @@ export class WebhookSenderService {
   private async record(
     deliveryId: string,
     attempt: number,
+    maxAttempts: number,
     outcome: SendOutcome,
   ): Promise<void> {
-    const exhausted = attempt >= MAX_ATTEMPTS;
+    // Read off the row rather than the constant, because a manual replay raises
+    // this delivery's own budget without changing the policy for everyone else
+    const exhausted = attempt >= maxAttempts;
 
     // One transaction, so a delivery can never claim more attempts than it has
     // rows to show for
