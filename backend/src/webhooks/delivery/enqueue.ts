@@ -23,20 +23,30 @@ export async function enqueueDeliveries(
     return;
   }
 
-  await Promise.race([
-    queue.addBulk(
-      deliveries.map((delivery) => ({
-        name: WEBHOOK_JOB,
-        data: { deliveryId: delivery.id },
-        opts: { jobId: webhookJobId(delivery.id, delivery.updatedAt) },
-      })),
-    ),
-    new Promise<never>((_, reject) =>
-      setTimeout(
-        () =>
-          reject(new Error(`redis did not answer in ${ENQUEUE_TIMEOUT_MS}ms`)),
-        ENQUEUE_TIMEOUT_MS,
+  let timer: NodeJS.Timeout | undefined;
+
+  try {
+    await Promise.race([
+      queue.addBulk(
+        deliveries.map((delivery) => ({
+          name: WEBHOOK_JOB,
+          data: { deliveryId: delivery.id },
+          opts: { jobId: webhookJobId(delivery.id, delivery.updatedAt) },
+        })),
       ),
-    ),
-  ]);
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () =>
+            reject(
+              new Error(`redis did not answer in ${ENQUEUE_TIMEOUT_MS}ms`),
+            ),
+          ENQUEUE_TIMEOUT_MS,
+        );
+      }),
+    ]);
+  } finally {
+    // Losing the race does not cancel the timer, and this runs every 5 seconds.
+    // Without this the process carries a drift of live timers for no reason
+    clearTimeout(timer);
+  }
 }
