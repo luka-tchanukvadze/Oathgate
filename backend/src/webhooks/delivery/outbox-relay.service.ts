@@ -4,26 +4,15 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { Queue } from 'bullmq';
 import { Prisma, type OutboxEvent } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { WEBHOOK_JOB, WEBHOOK_QUEUE } from '../../queue/queue.constants';
-import { webhookJobId } from './webhook.constants';
+import { WEBHOOK_QUEUE } from '../../queue/queue.constants';
+import { enqueueDeliveries, type Enqueueable } from './enqueue';
+import { MAX_ATTEMPTS } from './webhook.constants';
 
 type Tx = Prisma.TransactionClient;
-
-// attempts comes along because it is part of the job id, so a row a previous
-// run already tried gets a fresh job rather than a refused duplicate
-interface Claimed {
-  id: string;
-  attempts: number;
-}
 
 // Small on purpose. Every row in a batch is held under a lock until the whole
 // batch commits, so a big one keeps a transaction open longer for no gain
 const BATCH_SIZE = 50;
-
-// Redis is configured to retry forever rather than fail a command, which is
-// right for a worker holding a blocking read and wrong here. Without a deadline
-// a dead Redis would leave this tick hanging and the next one starting anyway
-const ENQUEUE_TIMEOUT_MS = 5_000;
 
 @Injectable()
 export class OutboxRelayService {
@@ -43,7 +32,11 @@ export class OutboxRelayService {
 
       // Deliberately after the commit. Enqueuing inside the transaction would
       // hand out a job id for a row that a rollback then took away
-      await this.enqueue(claimed);
+      await enqueueDeliveries(this.queue, claimed);
+
+      if (claimed.length > 0) {
+        this.logger.log(`queued ${claimed.length} webhook deliveries`);
+      }
     } catch (error) {
       // Swallowed. The rows are still unpublished and the next tick is 5
       // seconds away, so there is nothing here worth crashing the app over
@@ -51,7 +44,7 @@ export class OutboxRelayService {
     }
   }
 
-  private async claimBatch(): Promise<Claimed[]> {
+  private async claimBatch(): Promise<Enqueueable[]> {
     return this.prisma.$transaction(async (tx) => {
       // SKIP LOCKED is what makes a second relay tick harmless: it walks past
       // any row the first one is already holding instead of queueing behind it.
@@ -69,7 +62,7 @@ export class OutboxRelayService {
         return [];
       }
 
-      const claimed: Claimed[] = [];
+      const claimed: Enqueueable[] = [];
 
       for (const event of events) {
         claimed.push(...(await this.fanOut(tx, event)));
@@ -89,7 +82,7 @@ export class OutboxRelayService {
   // One event becomes one delivery row per endpoint that wants it. A merchant
   // with no endpoints produces none, and the event is still marked published:
   // published means the relay is done with it, not that anyone was told
-  private async fanOut(tx: Tx, event: OutboxEvent): Promise<Claimed[]> {
+  private async fanOut(tx: Tx, event: OutboxEvent): Promise<Enqueueable[]> {
     const endpoints = await tx.webhookEndpoint.findMany({
       where: {
         merchantId: event.merchantId,
@@ -117,6 +110,7 @@ export class OutboxRelayService {
         mode: event.mode,
         eventType: event.eventType,
         payload: this.envelope(event),
+        maxAttempts: MAX_ATTEMPTS,
         // Due immediately. The retry sweep reads this column, so a job that
         // never made it into Redis still has a time on it
         nextAttemptAt: new Date(),
@@ -131,7 +125,7 @@ export class OutboxRelayService {
     // crashed run created get picked up and queued here too
     return tx.webhookDelivery.findMany({
       where: { outboxEventId: event.id },
-      select: { id: true, attempts: true },
+      select: { id: true, updatedAt: true },
     });
   }
 
@@ -144,34 +138,5 @@ export class OutboxRelayService {
       createdAt: event.createdAt.toISOString(),
       data: event.payload,
     };
-  }
-
-  private async enqueue(claimed: Claimed[]): Promise<void> {
-    if (claimed.length === 0) {
-      return;
-    }
-
-    await Promise.race([
-      this.queue.addBulk(
-        claimed.map((delivery) => ({
-          name: WEBHOOK_JOB,
-          data: { deliveryId: delivery.id },
-          // Redis refuses a duplicate id, so a replayed batch cannot put the
-          // same delivery in the queue twice
-          opts: { jobId: webhookJobId(delivery.id, delivery.attempts) },
-        })),
-      ),
-      new Promise<never>((_, reject) =>
-        setTimeout(
-          () =>
-            reject(
-              new Error(`redis did not answer in ${ENQUEUE_TIMEOUT_MS}ms`),
-            ),
-          ENQUEUE_TIMEOUT_MS,
-        ),
-      ),
-    ]);
-
-    this.logger.log(`queued ${claimed.length} webhook deliveries`);
   }
 }
