@@ -12,11 +12,12 @@ import { redisConnection } from './redis-connection';
       useFactory: (config: ConfigService) => ({
         connection: redisConnection(config.getOrThrow<string>('REDIS_URL')),
         defaultJobOptions: {
-          // Finished jobs are dropped from Redis. Postgres already holds the
-          // delivery history, and a queue that remembers everything fills the
-          // box it runs on
-          removeOnComplete: 100,
-          removeOnFail: 500,
+          // Dropped the moment they finish, not kept as a recent-history
+          // window. Postgres already holds the delivery history, and a finished
+          // job that lingers keeps its id reserved: the retry sweep would then
+          // be silently refused when it tries to queue that delivery again
+          removeOnComplete: true,
+          removeOnFail: true,
         },
       }),
     }),
