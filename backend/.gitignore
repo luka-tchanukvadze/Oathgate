@@ -2,7 +2,7 @@ node_modules
 # Keep environment variables out of version control
 .env
 
-/src/generated/prisma
+/libs/shared/src/generated/prisma
 
 # Prisma dropped these in for AI tools. Vendored docs, so lets not push on github...
 # .claude and .windsurf are just junctions to the same files.

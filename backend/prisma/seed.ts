@@ -6,7 +6,7 @@ import {
   AccountKind,
   KeyMode,
   PrismaClient,
-} from '../src/generated/prisma/client';
+} from '../libs/shared/src/generated/prisma/client';
 
 // Every step here has to survive a second run. A seed that only works against an
 // empty database is one I stop trusting the first time the schema moves

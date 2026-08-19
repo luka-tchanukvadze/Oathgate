@@ -6,20 +6,25 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "nest build",
+    "build": "nest build api && nest build worker && nest build notifications",
     "seed": "prisma db seed",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"prisma/**/*.ts\" prisma.config.ts",
-    "start": "nest start",
-    "start:dev": "nest start --watch",
-    "dev": "nest start --watch",
-    "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main",
-    "lint": "eslint \"{src,apps,libs,test,prisma}/**/*.ts\" prisma.config.ts --fix",
+    "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\" \"test/**/*.ts\" \"prisma/**/*.ts\" prisma.config.ts",
+    "start": "nest start api",
+    "start:dev": "nest start api --watch",
+    "dev": "nest start api --watch",
+    "start:debug": "nest start api --debug --watch",
+    "start:prod": "node dist/apps/api/src/main",
+    "lint": "eslint \"{apps,libs,test,prisma}/**/*.ts\" prisma.config.ts --fix",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "dev:worker": "nest start worker --watch",
+    "start:worker": "node dist/apps/worker/src/main",
+    "dev:notifications": "nest start notifications --watch",
+    "start:notifications": "node dist/apps/notifications/src/main",
+    "prebuild": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
   },
   "dependencies": {
     "@nestjs/bullmq": "^11.0.5",
@@ -77,7 +82,7 @@
       "json",
       "ts"
     ],
-    "rootDir": "src",
+    "rootDir": ".",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
@@ -85,7 +90,15 @@
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],
-    "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "coverageDirectory": "./coverage",
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/apps",
+      "<rootDir>/libs"
+    ],
+    "moduleNameMapper": {
+      "^@app/shared$": "<rootDir>/libs/shared/src",
+      "^@app/shared/(.*)$": "<rootDir>/libs/shared/src/$1"
+    }
   }
 }
