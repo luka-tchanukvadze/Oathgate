@@ -1,8 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
-import { EVENTS_CHANNEL } from './event.constants';
-import type { DomainEvent } from './event.types';
+import { type DomainEvent, EVENTS_CHANNEL } from '@app/contracts';
 import { redisConnection, redisTarget } from '../queue/redis-connection';
 
 @Injectable()

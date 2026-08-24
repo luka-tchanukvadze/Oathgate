@@ -21,6 +21,8 @@
     // without it a path target has to start with ./ so it resolves against this
     // file rather than an implied root
     "paths": {
+      "@app/contracts": ["./libs/contracts/src"],
+      "@app/contracts/*": ["./libs/contracts/src/*"],
       "@app/shared": ["./libs/shared/src"],
       "@app/shared/*": ["./libs/shared/src/*"]
     }

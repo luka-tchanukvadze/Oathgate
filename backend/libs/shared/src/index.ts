@@ -4,8 +4,6 @@ export * from './generated/prisma/client';
 
 export * from './common/page';
 export * from './events/event-publisher.service';
-export * from './events/event.constants';
-export * from './events/event.types';
 export * from './events/events.module';
 export * from './money/currencies';
 export * from './prisma/prisma.module';

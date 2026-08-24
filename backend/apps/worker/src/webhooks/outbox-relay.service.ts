@@ -2,8 +2,8 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Queue } from 'bullmq';
+import type { DomainEvent } from '@app/contracts';
 import {
-  type DomainEvent,
   type Enqueueable,
   enqueueDeliveries,
   EventPublisher,
