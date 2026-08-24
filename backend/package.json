@@ -24,7 +24,9 @@
     "start:worker": "node dist/apps/worker/src/main",
     "dev:notifications": "nest start notifications --watch",
     "start:notifications": "node dist/apps/notifications/src/main",
-    "prebuild": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
+    "prebuild": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "notifications:generate": "prisma generate --config apps/notifications/prisma.config.ts",
+    "notifications:migrate": "prisma migrate dev --config apps/notifications/prisma.config.ts"
   },
   "dependencies": {
     "@nestjs/bullmq": "^11.0.5",

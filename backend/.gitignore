@@ -3,6 +3,7 @@ node_modules
 .env
 
 /libs/shared/src/generated/prisma
+/apps/notifications/src/generated/prisma
 
 # Prisma dropped these in for AI tools. Vendored docs, so lets not push on github...
 # .claude and .windsurf are just junctions to the same files.
