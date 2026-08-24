@@ -6,6 +6,8 @@ import {
 } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import {
+  enqueueDeliveries,
+  MAX_ATTEMPTS,
   type Page,
   PrismaService,
   WEBHOOK_QUEUE,
@@ -14,8 +16,6 @@ import {
   WebhookDeliveryStatus,
 } from '@app/shared';
 import { DEFAULT_LIMIT, ListDeliveriesDto } from './dto/list-deliveries.dto';
-import { enqueueDeliveries } from '../delivery/enqueue';
-import { MAX_ATTEMPTS } from '../delivery/webhook.constants';
 
 type DeliveryWithAttempts = WebhookDelivery & {
   webhookAttempts: WebhookAttempt[];

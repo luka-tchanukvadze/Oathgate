@@ -8,10 +8,10 @@ import {
   KeyMode,
   Prisma,
   PrismaService,
+  SecretCipher,
   type WebhookEndpoint,
 } from '@app/shared';
 import { CreateEndpointDto } from './dto/create-endpoint.dto';
-import { SecretCipher } from '../secret-cipher';
 import { assertDeliverableUrl } from './webhook-url';
 
 // Long enough that guessing it is not a strategy. The merchant copies it once

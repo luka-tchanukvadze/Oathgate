@@ -1,28 +1,18 @@
 import { Module } from '@nestjs/common';
+import { QueueModule, SecretCipher } from '@app/shared';
 import { AuthModule } from '../auth/auth.module';
-import { QueueModule } from '@app/shared';
-import { OutboxRelayService } from './delivery/outbox-relay.service';
-import { WebhookProcessor } from './delivery/webhook.processor';
-import { WebhookRetryService } from './delivery/webhook-retry.service';
-import { WebhookSenderService } from './delivery/webhook-sender.service';
 import { DashboardWebhooksController } from './endpoints/dashboard-webhooks.controller';
 import { WebhooksService } from './endpoints/webhooks.service';
 import { DashboardDeliveriesController } from './log/dashboard-deliveries.controller';
 import { DeliveriesService } from './log/deliveries.service';
-import { SecretCipher } from './secret-cipher';
 
+// Controllers only. The relay, the sender and the retry sweep moved to the
+// worker, so nothing in here sends anything. QueueModule stays because a manual
+// replay still puts a job on the queue for the worker to pick up
 @Module({
   imports: [AuthModule, QueueModule],
   controllers: [DashboardWebhooksController, DashboardDeliveriesController],
-  providers: [
-    WebhooksService,
-    SecretCipher,
-    OutboxRelayService,
-    WebhookSenderService,
-    WebhookProcessor,
-    WebhookRetryService,
-    DeliveriesService,
-  ],
+  providers: [WebhooksService, SecretCipher, DeliveriesService],
   exports: [WebhooksService, SecretCipher],
 })
 export class WebhooksModule {}
