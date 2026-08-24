@@ -3,8 +3,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Queue } from 'bullmq';
 import {
+  type DomainEvent,
   type Enqueueable,
   enqueueDeliveries,
+  EventPublisher,
   MAX_ATTEMPTS,
   type OutboxEvent,
   Prisma,
@@ -18,12 +20,21 @@ type Tx = Prisma.TransactionClient;
 // batch commits, so a big one keeps a transaction open longer for no gain
 const BATCH_SIZE = 50;
 
+// A batch produces two different things from the same rows: delivery rows to
+// queue, and events to broadcast. A merchant with no endpoint registered yields
+// none of the first and still yields the second
+interface Claimed {
+  deliveries: Enqueueable[];
+  events: DomainEvent[];
+}
+
 @Injectable()
 export class OutboxRelayService {
   private readonly logger = new Logger(OutboxRelayService.name);
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly publisher: EventPublisher,
     @InjectQueue(WEBHOOK_QUEUE) private readonly queue: Queue,
   ) {}
 
@@ -32,15 +43,18 @@ export class OutboxRelayService {
   @Cron(CronExpression.EVERY_5_SECONDS)
   async relay(): Promise<void> {
     try {
-      const claimed = await this.claimBatch();
+      const { deliveries, events } = await this.claimBatch();
 
-      // Deliberately after the commit. Enqueuing inside the transaction would
-      // hand out a job id for a row that a rollback then took away
-      await enqueueDeliveries(this.queue, claimed);
+      // Both deliberately after the commit. Enqueuing inside the transaction
+      // would hand out a job id for a row that a rollback then took away
+      await enqueueDeliveries(this.queue, deliveries);
 
-      if (claimed.length > 0) {
-        this.logger.log(`queued ${claimed.length} webhook deliveries`);
+      if (deliveries.length > 0) {
+        this.logger.log(`queued ${deliveries.length} webhook deliveries`);
       }
+
+      // Last, and it never throws. A pub/sub problem must not stop a webhook
+      await this.publisher.publish(events);
     } catch (error) {
       // Swallowed. The rows are still unpublished and the next tick is 5
       // seconds away, so there is nothing here worth crashing the app over
@@ -48,7 +62,7 @@ export class OutboxRelayService {
     }
   }
 
-  private async claimBatch(): Promise<Enqueueable[]> {
+  private async claimBatch(): Promise<Claimed> {
     return this.prisma.$transaction(async (tx) => {
       // SKIP LOCKED is what makes a second relay tick harmless: it walks past
       // any row the first one is already holding instead of queueing behind it.
@@ -63,13 +77,13 @@ export class OutboxRelayService {
       `;
 
       if (events.length === 0) {
-        return [];
+        return { deliveries: [], events: [] };
       }
 
-      const claimed: Enqueueable[] = [];
+      const deliveries: Enqueueable[] = [];
 
       for (const event of events) {
-        claimed.push(...(await this.fanOut(tx, event)));
+        deliveries.push(...(await this.fanOut(tx, event)));
       }
 
       // Last, so a crash anywhere above rolls the whole thing back and leaves
@@ -79,7 +93,7 @@ export class OutboxRelayService {
         data: { publishedAt: new Date() },
       });
 
-      return claimed;
+      return { deliveries, events: events.map((e) => this.domainEvent(e)) };
     });
   }
 
@@ -131,6 +145,19 @@ export class OutboxRelayService {
       where: { outboxEventId: event.id },
       select: { id: true, updatedAt: true },
     });
+  }
+
+  // What goes on the channel. Shares nothing with the webhook body on purpose:
+  // that one is a contract with merchants, this one is mine to change
+  private domainEvent(event: OutboxEvent): DomainEvent {
+    return {
+      id: event.id,
+      type: event.eventType,
+      merchantId: event.merchantId,
+      mode: event.mode,
+      createdAt: event.createdAt.toISOString(),
+      data: event.payload,
+    };
   }
 
   // The exact object the merchant will receive. Frozen into the delivery row

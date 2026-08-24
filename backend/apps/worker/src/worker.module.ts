@@ -1,7 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
-import { PrismaModule, QueueModule, SecretCipher } from '@app/shared';
+import {
+  EventsModule,
+  PrismaModule,
+  QueueModule,
+  SecretCipher,
+} from '@app/shared';
 import { ExpiryService } from './payments/expiry.service';
 import { OutboxRelayService } from './webhooks/outbox-relay.service';
 import { WebhookProcessor } from './webhooks/webhook.processor';
@@ -16,6 +21,7 @@ import { WebhookSenderService } from './webhooks/webhook-sender.service';
     ScheduleModule.forRoot(),
     PrismaModule,
     QueueModule,
+    EventsModule,
   ],
   providers: [
     ExpiryService,
