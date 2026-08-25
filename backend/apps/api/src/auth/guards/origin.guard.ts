@@ -8,8 +8,8 @@ import type { Request } from 'express';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
-// Only the cookie-authenticated half needs this. An API key is never attached
-// by a browser on its own, so /v1 cannot be driven by another site
+// Only the cookie half needs this
+// A browser never attaches an API key on its own, so /v1 is safe
 const COOKIE_AUTH_PREFIX = '/api/dashboard';
 
 @Injectable()
@@ -32,9 +32,8 @@ export class OriginGuard implements CanActivate {
 
     const origin = request.header('origin');
 
-    // Absent means a non-browser client, and forging a request needs a browser
-    // that holds the cookie. Present and wrong means another site is driving
-    // somebody's session
+    // Absent means a non-browser client, which cannot hold the cookie
+    // Present and wrong means another site is driving somebody's session
     if (origin && !this.allowed.has(origin)) {
       throw new ForbiddenException('origin not allowed');
     }

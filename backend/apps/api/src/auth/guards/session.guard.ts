@@ -21,8 +21,8 @@ export class SessionGuard implements CanActivate {
 
     const session = await this.sessions.resolve(token);
 
-    // Expired, revoked and never-existed are one answer. A browser has nothing
-    // useful to do with the difference
+    // Expired, revoked and never existed are one answer
+    // A browser has nothing useful to do with the difference
     if (!session) {
       throw new UnauthorizedException('not signed in');
     }

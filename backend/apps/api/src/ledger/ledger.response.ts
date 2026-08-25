@@ -1,7 +1,7 @@
 import { type Account, type LedgerEntry } from '@app/shared';
 
-// toFixed(0) rather than toString, because a Decimal long enough prints in
-// scientific notation and satoshi amounts get there
+// toFixed(0), not toString
+// A long enough Decimal prints as 1e+21, and satoshis get there
 export function toBalanceResponse(account: Account) {
   return {
     id: account.id,

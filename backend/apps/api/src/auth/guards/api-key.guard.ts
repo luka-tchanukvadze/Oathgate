@@ -9,8 +9,8 @@ import {
 import type { Request } from 'express';
 import { PrismaService } from '@app/shared';
 
-// 5 minutes. Refreshing lastUsedAt on every call would double the writes on
-// this table for a column nobody reads in real time
+// 5 minutes
+// Refreshing lastUsedAt every call doubles writes for a cosmetic column
 const LAST_USED_STALE_MS = 5 * 60 * 1000;
 
 function readBearerToken(header: string | undefined): string | null {
@@ -37,8 +37,8 @@ export class ApiKeyGuard implements CanActivate {
       throw new UnauthorizedException('missing api key');
     }
 
-    // Hashed, then looked up. Nothing is ever compared, so there is no string
-    // comparison here to leak timing
+    // Hashed, then looked up
+    // Nothing is compared, so there is no string comparison to leak timing
     const keyHash = createHash('sha256').update(presented).digest('hex');
 
     const key = await this.prisma.apiKey.findUnique({
@@ -52,8 +52,8 @@ export class ApiKeyGuard implements CanActivate {
       },
     });
 
-    // One message for unknown and revoked alike. Telling them apart would say
-    // which guesses used to be real keys
+    // One message for unknown and revoked alike
+    // Telling them apart says which guesses used to be real keys
     if (!key || key.revokedAt) {
       throw new UnauthorizedException('invalid api key');
     }

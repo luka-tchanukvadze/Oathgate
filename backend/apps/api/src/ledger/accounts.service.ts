@@ -5,8 +5,8 @@ type Tx = Prisma.TransactionClient;
 
 @Injectable()
 export class AccountsService {
-  // findFirst rather than findUnique, because a house account has no owner and
-  // Prisma will not take null as part of a compound unique key
+  // findFirst, not findUnique
+  // A house account has no owner, and Prisma will not take null in a key
   async house(
     tx: Tx,
     kind: AccountKind,

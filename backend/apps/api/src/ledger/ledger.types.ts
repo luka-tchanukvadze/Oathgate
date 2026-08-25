@@ -1,7 +1,8 @@
 import { AccountKind, EntryDirection } from '@app/shared';
 
-// Which direction grows each kind of account. A gateway wallet holds coins I own, so a debit grows it. A merchant balance is money I owe, so a credit
-// grows it. Getting this backwards would show a shop a negative balance
+// Which direction grows which account
+// I own the wallet, so a debit grows it
+// I owe the merchant balance, so a credit grows it
 export const NORMAL_SIDE: Record<AccountKind, EntryDirection> = {
   [AccountKind.GATEWAY_WALLET]: EntryDirection.DEBIT,
   [AccountKind.MERCHANT_BALANCE]: EntryDirection.CREDIT,

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 
-// Keys sorted at every level, so the same request hashes the same no matter
-// what order the client's JSON serialiser happened to write them in
+// Keys sorted at every level, so {a,b} and {b,a} hash the same
+// Otherwise the client's JSON key order decides whether a retry matches
 function canonical(value: unknown): string {
   if (value === undefined) {
     return 'null';

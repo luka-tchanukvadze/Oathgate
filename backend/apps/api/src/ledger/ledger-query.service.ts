@@ -12,8 +12,8 @@ import { DEFAULT_LIMIT, ListEntriesDto } from './dto/list-entries.dto';
 export class LedgerQueryService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // Only the merchant's own rows. House accounts have no merchantId, so this
-  // filter excludes them without needing to name them
+  // Only the merchant's own rows
+  // House accounts have no merchantId, so this excludes them for free
   async balances(merchantId: string, mode: KeyMode): Promise<Account[]> {
     return this.prisma.account.findMany({
       where: { merchantId, mode },
@@ -27,8 +27,8 @@ export class LedgerQueryService {
   ): Promise<Page<LedgerEntry>> {
     const limit = query.limit ?? DEFAULT_LIMIT;
 
-    // An entry has no merchant of its own, it has an account. So the ownership
-    // check goes through the relation rather than a column on this table
+    // An entry has no merchant of its own, it has an account
+    // So ownership is checked through the relation, not a column here
     const rows = await this.prisma.ledgerEntry.findMany({
       where: {
         account: { merchantId, mode: query.mode },
