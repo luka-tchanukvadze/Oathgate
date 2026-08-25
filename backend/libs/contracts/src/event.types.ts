@@ -1,12 +1,9 @@
-// A union written out by hand rather than the gateway's Prisma enum. This file
-// is the wire format between two services, so it must not depend on either
-// side's database, or the boundary is decoration
+// Written out by hand rather than reusing my Prisma enum. This is the wire format
+// between two services, so it cannot depend on either side's database
 export type EventMode = 'TEST' | 'LIVE';
 
-// Deliberately not the same shape as the webhook body. That one is a public
-// contract I cannot change without breaking merchants. This one is internal, so
-// it carries routing fields at the top level where a consumer can filter on them
-// without parsing data
+// Not the webhook body shape. Merchants depend on that one, this one is mine, so
+// it puts the routing fields at the top where a consumer can filter cheaply
 export interface DomainEvent {
   id: string;
   type: string;

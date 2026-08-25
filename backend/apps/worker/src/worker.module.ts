@@ -13,8 +13,7 @@ import { WebhookProcessor } from './webhooks/webhook.processor';
 import { WebhookRetryService } from './webhooks/webhook-retry.service';
 import { WebhookSenderService } from './webhooks/webhook-sender.service';
 
-// No controllers, and there never will be. Everything here is started by a clock
-// or by a job arriving, never by a request
+// Nothing here is started by a request, so there are no controllers
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -29,8 +28,8 @@ import { WebhookSenderService } from './webhooks/webhook-sender.service';
     WebhookSenderService,
     WebhookProcessor,
     WebhookRetryService,
-    // Decrypts a stored secret to sign with. The api holds its own instance for
-    // the encrypt half, which is fine: it is a key from config, not shared state
+    // The decrypt half. The api keeps its own instance for encrypting, which is
+    // fine, it is a key from config and not shared state
     SecretCipher,
   ],
 })

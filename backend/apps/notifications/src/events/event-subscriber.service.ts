@@ -20,16 +20,15 @@ export class EventSubscriberService implements OnModuleInit, OnModuleDestroy {
   ) {
     const url = new URL(config.getOrThrow<string>('REDIS_URL'));
 
-    // A connection of its own, and not because of tidiness. Redis puts a
-    // connection into subscriber mode and then refuses every other command on
-    // it, so this one can never be reused for anything else
+    // Its own connection, and not for tidiness. Redis puts a connection into
+    // subscriber mode and then refuses every other command on it
     this.redis = new Redis({
       host: url.hostname,
       port: url.port ? Number(url.port) : 6379,
       username: url.username || undefined,
       password: url.password || undefined,
-      // A subscriber that gives up reconnecting is a service that goes quiet
-      // without dying, which is the worst way to fail
+      // A subscriber that stops reconnecting goes quiet without dying, which is
+      // the worst way to fail
       maxRetriesPerRequest: null,
     });
 
@@ -43,12 +42,9 @@ export class EventSubscriberService implements OnModuleInit, OnModuleDestroy {
       void this.receive(raw);
     });
 
-    // Twice, and both are needed. The driver connects from its constructor, so
-    // by the time this hook runs the connection may already be ready and a
-    // listener added now would never hear that event, leaving the service alive
-    // and silent. Subscribing directly covers the first connection, and the
-    // listener covers every reconnect after it, because Redis does not remember
-    // what a dropped connection was listening to
+    // Both, and I need both. ioredis connects from its constructor, so ready can
+    // fire before I attach this and I would never hear it. The listener covers
+    // reconnects, the call below covers the connection I already have
     this.redis.on('ready', () => void this.subscribe());
 
     await this.subscribe();
@@ -59,8 +55,7 @@ export class EventSubscriberService implements OnModuleInit, OnModuleDestroy {
       await this.redis.subscribe(EVENTS_CHANNEL);
       this.logger.log(`subscribed to ${EVENTS_CHANNEL}`);
     } catch (error) {
-      // Never thrown. A subscribe that fails at boot is retried by the ready
-      // listener as soon as the connection comes back
+      // Never thrown. The ready listener retries once the connection is back
       this.logger.error(`subscribe failed: ${String(error)}`);
     }
   }
@@ -73,8 +68,8 @@ export class EventSubscriberService implements OnModuleInit, OnModuleDestroy {
     }
 
     try {
-      // createMany rather than create, for skipDuplicates. A redelivered event
-      // is normal and must be silent, not an error in the log
+      // createMany for skipDuplicates. A redelivery is normal and should be
+      // silent, not an error in the log
       const { count } = await this.prisma.receivedEvent.createMany({
         data: [
           {
@@ -92,15 +87,14 @@ export class EventSubscriberService implements OnModuleInit, OnModuleDestroy {
         this.logger.log(`stored ${event.type} ${event.id}`);
       }
     } catch (error) {
-      // Nothing to retry against. Pub/sub has already handed the message over
-      // and will not hand it back, so the honest thing is to say it was lost
+      // Nothing to retry against. Pub/sub handed this over once and will not
+      // hand it back, so I say it was lost
       this.logger.error(`could not store ${event.id}: ${String(error)}`);
     }
   }
 
-  // Anything arriving on a channel is bytes from another process, so it gets
-  // checked rather than trusted. A malformed message must not take the service
-  // down or, worse, write a half-populated row
+  // Bytes from another process, so I check rather than trust. A bad message must
+  // not kill the service or, worse, write half a row
   private parse(raw: string): DomainEvent | null {
     let value: unknown;
 

@@ -20,9 +20,8 @@ type Tx = Prisma.TransactionClient;
 // batch commits, so a big one keeps a transaction open longer for no gain
 const BATCH_SIZE = 50;
 
-// A batch produces two different things from the same rows: delivery rows to
-// queue, and events to broadcast. A merchant with no endpoint registered yields
-// none of the first and still yields the second
+// One batch, two outputs. A merchant with no endpoint registered gives me no
+// deliveries and still gives me an event
 interface Claimed {
   deliveries: Enqueueable[];
   events: DomainEvent[];
@@ -147,8 +146,8 @@ export class OutboxRelayService {
     });
   }
 
-  // What goes on the channel. Shares nothing with the webhook body on purpose:
-  // that one is a contract with merchants, this one is mine to change
+  // What goes on the channel. Not the webhook body, on purpose: that one is a
+  // contract with merchants, this one is mine to change
   private domainEvent(event: OutboxEvent): DomainEvent {
     return {
       id: event.id,
