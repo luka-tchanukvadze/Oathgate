@@ -16,6 +16,8 @@ export const DELIVERY_HEADER = 'oathgate-delivery';
 // The row's version, not just its id
 // Redis refuses a duplicate, which dedupes two sweeps seconds apart
 // A recorded attempt or a replay moves updatedAt and becomes a new job
+// An underscore because BullMQ rejects a colon
+// It builds its own keys as bull:<queue>:<jobId>, so a colon would split one
 export function webhookJobId(deliveryId: string, updatedAt: Date): string {
-  return `${deliveryId}:${updatedAt.getTime()}`;
+  return `${deliveryId}_${updatedAt.getTime()}`;
 }
