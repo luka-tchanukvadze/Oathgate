@@ -1,5 +1,5 @@
-// The one door into the shared library. Apps import from '@app/shared' and never
-// reach into its folders, so moving a file in here never breaks an app
+// Apps import @app/shared and never reach inside these folders
+// So moving a file in here breaks nothing
 export * from './generated/prisma/client';
 
 export * from './common/page';
