@@ -21,8 +21,8 @@ export class MailerService {
 
     this.from = config.get<string>('MAIL_FROM') ?? user ?? 'oathgate@localhost';
 
-    // With no creds I log instead of sending, so a fresh clone still demos and
-    // nothing piles up waiting on a password
+    // With no SMTP credentials I log the message instead of sending it
+    // A fresh clone still demos, and nothing piles up waiting on a password
     if (!host || !user || !password) {
       this.transport = null;
       this.logger.warn('no SMTP configured, emails will be logged not sent');
@@ -33,14 +33,15 @@ export class MailerService {
     this.transport = createTransport({
       host,
       port: Number(config.get<string>('SMTP_PORT') ?? 465),
-      // 465 is implicit TLS, 587 upgrades with STARTTLS afterwards
+      // Port 465 is encrypted from the first byte
+      // Port 587 starts in the clear and upgrades, so secure has to be false
       secure: Number(config.get<string>('SMTP_PORT') ?? 465) === 465,
       auth: { user, pass: password },
     });
   }
 
-  // I let this throw. The caller counts the attempt and leaves the row for the
-  // next sweep
+  // I let this throw
+  // The caller counts the attempt and leaves the row for the next sweep
   async send(email: OutgoingEmail): Promise<void> {
     if (!this.transport) {
       this.logger.log(

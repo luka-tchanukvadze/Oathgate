@@ -6,13 +6,12 @@ export const DEFAULT_LIMIT = 20;
 export const MAX_LIMIT = 100;
 
 export class ListDeliveriesDto {
-  // A browser has a test/live toggle, so mode is stated and validated rather
-  // than inferred off a key the way the merchant-facing API does it
+  // A browser has a toggle, so mode is stated and validated, not inferred
   @IsEnum(KeyMode)
   mode!: KeyMode;
 
-  // A count, not an amount, so a number is fine here. Capped, because the
-  // caller does not get to decide how much memory my process uses
+  // A count, not an amount, so a number is fine
+  // Capped, because the caller does not decide how much memory I use
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -20,8 +19,8 @@ export class ListDeliveriesDto {
   @Max(MAX_LIMIT)
   limit?: number;
 
-  // The id of the last row the caller already has. Ids are UUIDv7, so sorting
-  // by id is sorting by time and this needs no separate cursor column
+  // The id of the last row the caller has
+  // UUIDv7 sorts by time, so this needs no separate cursor column
   @IsOptional()
   @IsUUID()
   startingAfter?: string;

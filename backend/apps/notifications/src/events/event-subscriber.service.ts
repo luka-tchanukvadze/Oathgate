@@ -20,15 +20,14 @@ export class EventSubscriberService implements OnModuleInit, OnModuleDestroy {
   ) {
     const url = new URL(config.getOrThrow<string>('REDIS_URL'));
 
-    // Its own connection, and not for tidiness. Redis puts a connection into
-    // subscriber mode and then refuses every other command on it
+    // Its own connection, and not for tidiness
+    // A subscribed connection refuses every other command Redis has
     this.redis = new Redis({
       host: url.hostname,
       port: url.port ? Number(url.port) : 6379,
       username: url.username || undefined,
       password: url.password || undefined,
-      // A subscriber that stops reconnecting goes quiet without dying, which is
-      // the worst way to fail
+      // A subscriber that stops reconnecting goes quiet without dying
       maxRetriesPerRequest: null,
     });
 
@@ -42,9 +41,10 @@ export class EventSubscriberService implements OnModuleInit, OnModuleDestroy {
       void this.receive(raw);
     });
 
-    // Both, and I need both. ioredis connects from its constructor, so ready can
-    // fire before I attach this and I would never hear it. The listener covers
-    // reconnects, the call below covers the connection I already have
+    // Both, and I need both
+    // ioredis connects from its constructor
+    // ready can fire before I attach this, and then I never hear it
+    // The listener covers reconnects, the call below covers this one
     this.redis.on('ready', () => void this.subscribe());
 
     await this.subscribe();
@@ -55,7 +55,8 @@ export class EventSubscriberService implements OnModuleInit, OnModuleDestroy {
       await this.redis.subscribe(EVENTS_CHANNEL);
       this.logger.log(`subscribed to ${EVENTS_CHANNEL}`);
     } catch (error) {
-      // Never thrown. The ready listener retries once the connection is back
+      // Never thrown
+      // The ready listener retries once the connection is back
       this.logger.error(`subscribe failed: ${String(error)}`);
     }
   }
@@ -68,8 +69,8 @@ export class EventSubscriberService implements OnModuleInit, OnModuleDestroy {
     }
 
     try {
-      // createMany for skipDuplicates. A redelivery is normal and should be
-      // silent, not an error in the log
+      // createMany only because it takes skipDuplicates
+      // A redelivery is normal and should be silent, not an error in the log
       const { count } = await this.prisma.receivedEvent.createMany({
         data: [
           {
@@ -87,14 +88,14 @@ export class EventSubscriberService implements OnModuleInit, OnModuleDestroy {
         this.logger.log(`stored ${event.type} ${event.id}`);
       }
     } catch (error) {
-      // Nothing to retry against. Pub/sub handed this over once and will not
-      // hand it back, so I say it was lost
+      // Nothing to retry against
+      // Pub/sub handed this over once and will not hand it back
       this.logger.error(`could not store ${event.id}: ${String(error)}`);
     }
   }
 
-  // Bytes from another process, so I check rather than trust. A bad message must
-  // not kill the service or, worse, write half a row
+  // Bytes from another process, so I check rather than trust
+  // A bad message must not kill the service or write half a row
   private parse(raw: string): DomainEvent | null {
     let value: unknown;
 

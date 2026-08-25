@@ -6,7 +6,8 @@ import { NotificationsPrismaService } from '../prisma/notifications-prisma.servi
 
 const BATCH_SIZE = 50;
 
-// Five tries rides out a mail server hiccup. Past that, retrying is not the fix
+// Five tries rides out a mail server hiccup
+// Past that, retrying is not the fix
 const MAX_ATTEMPTS = 5;
 
 @Injectable()
@@ -18,8 +19,9 @@ export class EventProcessorService {
     private readonly mailer: MailerService,
   ) {}
 
-  // Not inline in the subscriber. If I die between storing and sending, the row
-  // is still here with processedAt null and the next sweep finds it
+  // Not inline in the subscriber
+  // If I die between storing and sending the row is still here
+  // processedAt is null, so the next sweep finds it
   @Cron(CronExpression.EVERY_10_SECONDS)
   async process(): Promise<void> {
     try {
@@ -53,15 +55,15 @@ export class EventProcessorService {
         await this.mailer.send(email);
       }
 
-      // Stamped even when I did nothing with it. Leaving it null means re-reading
-      // the same rows for ever
+      // Stamped even when I did nothing with it
+      // Leaving it null means re-reading the same rows for ever
       await this.prisma.receivedEvent.update({
         where: { id: event.id },
         data: { processedAt: new Date(), lastError: null },
       });
     } catch (error) {
-      // Row stays unprocessed so the next sweep retries. I keep the message here
-      // because this is where I will look, not a log from three hours ago
+      // Row stays unprocessed so the next sweep retries
+      // I keep the message here because this is where I will look
       await this.prisma.receivedEvent.update({
         where: { id: event.id },
         data: {

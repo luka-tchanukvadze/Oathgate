@@ -1,9 +1,8 @@
 import type { OutgoingEmail } from './mailer.service';
 import { formatMinorUnits } from './money';
 
-// What this service believes a payment.completed carries. It is a separate type
-// from anything the gateway exports on purpose: this is my reading of the
-// message, and every field is optional until I have checked it
+// My reading of a payment.completed, not a type the gateway exports
+// Every field is unknown until I have checked it
 interface PaymentCompletedPayload {
   paymentId?: unknown;
   merchantEmail?: unknown;
@@ -25,8 +24,8 @@ export function paymentCompletedEmail(
 
   const p = payload as PaymentCompletedPayload;
 
-  // No address means nothing to send to. Returning null rather than throwing,
-  // because this is not a failure to retry: the event will never grow the field
+  // No address means nothing to send to
+  // null rather than a throw, because retrying will not add the field
   if (typeof p.merchantEmail !== 'string' || p.merchantEmail.length === 0) {
     return null;
   }
@@ -46,8 +45,8 @@ export function paymentCompletedEmail(
   const name = typeof p.merchantName === 'string' ? p.merchantName : 'there';
   const paymentId = typeof p.paymentId === 'string' ? p.paymentId : 'unknown';
 
-  // The mode is in the subject because a test payment landing in an inbox next
-  // to a real one, looking identical, is how someone panics on a Friday
+  // Mode goes in the subject: [TEST] Payment received: 10.50 GEL
+  // A test payment that looks identical to a real one is how someone panics
   const subject =
     mode === 'LIVE'
       ? `Payment received: ${amount}`

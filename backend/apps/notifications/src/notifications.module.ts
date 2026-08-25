@@ -6,8 +6,8 @@ import { EventProcessorService } from './events/event-processor.service';
 import { EventSubscriberService } from './events/event-subscriber.service';
 import { NotificationsPrismaService } from './prisma/notifications-prisma.service';
 
-// No @app/shared here, on purpose. This service gets the event contract and its
-// own database, and nothing else of mine
+// No @app/shared here, on purpose
+// This service gets the event contract and its own database, nothing else
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true }), ScheduleModule.forRoot()],
   providers: [

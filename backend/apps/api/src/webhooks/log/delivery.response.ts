@@ -26,9 +26,8 @@ export function toAttemptResponse(attempt: WebhookAttempt) {
   };
 }
 
-// The payload is here and not in the list, because it is the one field that can
-// be large. It is also the exact body that was signed, which is what makes this
-// view worth having: a merchant debugging a bad signature can see what I sent
+// Here and not in the list, because it is the one field that can be large
+// It is also the exact body I signed, which is the point of this view
 export function toDeliveryDetailResponse(
   delivery: WebhookDelivery & { webhookAttempts: WebhookAttempt[] },
 ) {
