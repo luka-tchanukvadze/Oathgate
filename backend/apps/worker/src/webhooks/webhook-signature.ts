@@ -1,8 +1,8 @@
 import { createHmac } from 'node:crypto';
 
-// Stripe's header shape, copied deliberately. Merchants have already written
-// code against `t=...,v1=...` and the version prefix leaves room to change the
-// algorithm later without breaking anyone still checking v1
+// Stripe's header shape, copied deliberately
+// It goes out looking like t=1755432000,v1=8f3a2c...
+// The v1 prefix leaves room to change algorithm without breaking anyone
 export function signPayload(
   secret: string,
   timestampSeconds: number,

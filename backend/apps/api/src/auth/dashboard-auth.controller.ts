@@ -25,8 +25,8 @@ import {
 export class DashboardAuthController {
   constructor(private readonly sessions: SessionService) {}
 
-  // Five a minute per address. Argon2 already makes guessing slow, this stops
-  // someone paying that cost in parallel
+  // Five a minute per address
+  // Argon2 makes one guess slow, this stops someone paying that in parallel
   @Post('login')
   @HttpCode(200)
   @UseGuards(ThrottlerGuard)
@@ -52,8 +52,8 @@ export class DashboardAuthController {
     return { merchantId };
   }
 
-  // Signing out with a dead cookie still succeeds. There is nothing useful to
-  // tell someone who is already not signed in
+  // Signing out with an expired cookie still succeeds
+  // There is nothing useful to tell someone already signed out
   @Post('logout')
   @HttpCode(200)
   async logout(
@@ -66,8 +66,8 @@ export class DashboardAuthController {
       await this.sessions.revoke(token);
     }
 
-    // Same flags it was set with, or the browser treats it as a different
-    // cookie and leaves the original in place
+    // Same flags it was set with
+    // Otherwise the browser sees a different cookie and keeps the original
     response.clearCookie(SESSION_COOKIE, sessionCookieOptions(new Date(0)));
 
     return { ok: true };
