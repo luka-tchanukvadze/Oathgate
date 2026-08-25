@@ -7,7 +7,10 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { type DomainEvent, EVENTS_CHANNEL } from '@app/contracts';
 import { Redis } from 'ioredis';
+import { Prisma } from '../generated/prisma/client';
 import { NotificationsPrismaService } from '../prisma/notifications-prisma.service';
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 @Injectable()
 export class EventSubscriberService implements OnModuleInit, OnModuleDestroy {
@@ -78,7 +81,7 @@ export class EventSubscriberService implements OnModuleInit, OnModuleDestroy {
             type: event.type,
             merchantId: event.merchantId,
             mode: event.mode,
-            payload: event.data as object,
+            payload: event.data as Prisma.InputJsonValue,
           },
         ],
         skipDuplicates: true,
@@ -120,6 +123,18 @@ export class EventSubscriberService implements OnModuleInit, OnModuleDestroy {
       (event.mode !== 'TEST' && event.mode !== 'LIVE')
     ) {
       this.logger.warn('ignoring a message with missing or wrong fields');
+      return null;
+    }
+
+    // id and merchantId land in uuid columns and data lands in a NOT NULL one
+    // Without these three the insert throws instead, and pub/sub cannot resend
+    if (!UUID.test(event.id) || !UUID.test(event.merchantId)) {
+      this.logger.warn(`ignoring ${event.id}, the ids are not uuids`);
+      return null;
+    }
+
+    if (event.data === undefined) {
+      this.logger.warn(`ignoring ${event.id}, it carries no data`);
       return null;
     }
 

@@ -57,6 +57,9 @@ export class EventProcessorService {
 
       // Stamped even when I did nothing with it
       // Leaving it null means re-reading the same rows for ever
+      // If this update fails after the send, the next sweep sends again
+      // There is no transaction that spans an SMTP call, so a duplicate email
+      // is the failure I choose over a missing one
       await this.prisma.receivedEvent.update({
         where: { id: event.id },
         data: { processedAt: new Date(), lastError: null },

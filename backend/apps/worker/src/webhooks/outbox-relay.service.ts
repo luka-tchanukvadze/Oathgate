@@ -46,14 +46,18 @@ export class OutboxRelayService {
 
       // Both after the commit, deliberately
       // Enqueuing inside would hand out a job id for a row a rollback removes
-      await enqueueDeliveries(this.queue, deliveries);
+      // Its own try, because publishedAt is committed by the time I get here
+      // A throw would skip the publish below and lose the event for good
+      try {
+        await enqueueDeliveries(this.queue, deliveries);
 
-      if (deliveries.length > 0) {
-        this.logger.log(`queued ${deliveries.length} webhook deliveries`);
+        if (deliveries.length > 0) {
+          this.logger.log(`queued ${deliveries.length} webhook deliveries`);
+        }
+      } catch (error) {
+        this.logger.error(`enqueue failed: ${String(error)}`);
       }
 
-      // Last, and it never throws
-      // A pub/sub problem must not stop a webhook
       await this.publisher.publish(events);
     } catch (error) {
       // Swallowed
