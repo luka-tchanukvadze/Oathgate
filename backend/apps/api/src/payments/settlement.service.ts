@@ -7,6 +7,7 @@ import {
 import {
   AccountKind,
   EntryDirection,
+  fiatExponent,
   type Payment,
   PaymentStatus,
   type Prisma,
@@ -92,6 +93,14 @@ export class SettlementService {
         ],
       });
 
+      // Read here so the event can carry it. The notifications service has its
+      // own database and cannot join to mine, so anything a consumer needs has
+      // to travel with the event or it simply cannot act on it
+      const merchant = await tx.merchant.findUniqueOrThrow({
+        where: { id: merchantId },
+        select: { email: true, name: true },
+      });
+
       const settled = await tx.payment.update({
         where: { id: paymentId },
         data: { status: PaymentStatus.PAID },
@@ -110,8 +119,15 @@ export class SettlementService {
             paymentId,
             merchantId,
             mode: payment.mode,
+            merchantEmail: merchant.email,
+            merchantName: merchant.name,
             cryptoAmount: amount.toString(),
             cryptoCurrency: payment.cryptoCurrency,
+            fiatAmount: payment.fiatAmount.toFixed(0),
+            fiatCurrency: payment.fiatCurrency,
+            // The exponent travels with the amount so a consumer can format it
+            // exactly, instead of assuming every currency has two decimals
+            fiatExponent: fiatExponent(payment.fiatCurrency),
           },
         },
       });

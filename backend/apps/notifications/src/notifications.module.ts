@@ -1,13 +1,20 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
+import { MailerService } from './email/mailer.service';
+import { EventProcessorService } from './events/event-processor.service';
 import { EventSubscriberService } from './events/event-subscriber.service';
 import { NotificationsPrismaService } from './prisma/notifications-prisma.service';
 
-// Note what is absent: no PrismaModule from @app/shared, no QueueModule, no
-// import of @app/shared at all. This service knows the event contract and its
-// own database, and nothing else about the gateway
+// No @app/shared here, on purpose. This service gets the event contract and its
+// own database, and nothing else of mine
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true })],
-  providers: [NotificationsPrismaService, EventSubscriberService],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), ScheduleModule.forRoot()],
+  providers: [
+    NotificationsPrismaService,
+    EventSubscriberService,
+    EventProcessorService,
+    MailerService,
+  ],
 })
 export class NotificationsModule {}

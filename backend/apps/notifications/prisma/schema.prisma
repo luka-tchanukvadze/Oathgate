@@ -30,9 +30,14 @@ model ReceivedEvent {
 
   receivedAt DateTime @default(now()) @db.Timestamptz(3)
 
-  // Null until something has acted on it. Step 5 fills this in when the email
-  // goes out, and it is what stops a redelivery sending a second copy
+  // Null until something has acted on it. Stamped when the email goes out, and
+  // it is what stops a redelivery sending a second copy
   processedAt DateTime? @db.Timestamptz(3)
+
+  // A row that keeps failing shows up here rather than only in a log that has
+  // already scrolled past
+  attempts  Int     @default(0)
+  lastError String? @db.VarChar(500)
 
   @@index([merchantId, receivedAt])
   @@index([processedAt])
