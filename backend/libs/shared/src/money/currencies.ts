@@ -1,5 +1,5 @@
-// Fiat is stored in minor units, so this is how many decimal places it has.
-// Crypto is stored in base units, so this is how many of them make one coin
+// Fiat is stored in minor units, so this is how many decimals it has
+// Crypto is stored in base units, so this is how many make one coin
 const FIAT_EXPONENT: Record<string, number> = {
   GEL: 2,
   USD: 2,
