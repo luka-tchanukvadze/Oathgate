@@ -44,8 +44,8 @@ export class DashboardDeliveriesController {
     return toDeliveryDetailResponse(delivery);
   }
 
-  // 202, not 200. The row is queued when this returns, not delivered, and saying
-  // 200 would claim something I do not know yet
+  // 202, not 200
+  // The row is queued when this returns, not delivered
   @Post(':id/replay')
   @HttpCode(HttpStatus.ACCEPTED)
   async replay(

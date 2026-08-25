@@ -6,16 +6,16 @@ import type { AuthenticatedSession } from './auth.types';
 
 export const SESSION_COOKIE = 'oathgate_session';
 
-// 12 hours, and it does not slide. One column instead of two, and logging in
-// again is cheap
+// 12 hours, and it does not slide
+// One column instead of two, and logging in again is cheap
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 
 function sha256(value: string): string {
   return createHash('sha256').update(value).digest('hex');
 }
 
-// No Domain attribute, so the cookie stays host-only on the API. Secure is off
-// on localhost because the browser drops secure cookies sent over plain http
+// No Domain attribute, so the cookie stays host-only on the API
+// Secure is off on localhost, or the browser drops it over plain http
 export function sessionCookieOptions(expires: Date) {
   return {
     httpOnly: true,
@@ -32,9 +32,9 @@ export class SessionService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  // Verified against a throwaway hash when the email is unknown, so a bad email
-  // and a bad password cost the same time. Otherwise the response speed alone
-  // tells someone which addresses are registered
+  // Verified against a throwaway hash when the email is unknown
+  // A bad email and a bad password then cost the same time
+  // Otherwise the reply speed alone says which addresses are registered
   async verifyPassword(
     email: string,
     password: string,
@@ -82,8 +82,7 @@ export class SessionService {
     return { sessionId: session.id, merchantId: session.merchantId };
   }
 
-  // updateMany rather than update, so signing out with a stale cookie is a
-  // no-op instead of a 500
+  // updateMany, so signing out with a stale cookie is a no-op not a 500
   async revoke(token: string): Promise<void> {
     await this.prisma.merchantSession.updateMany({
       where: { tokenHash: sha256(token), revokedAt: null },

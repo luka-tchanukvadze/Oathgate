@@ -8,9 +8,9 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../generated/prisma/client';
 
-// A second client for a second database. It looks almost identical to the
-// gateway's on purpose: the point is not that the code differs, it is that this
-// one physically cannot reach the payment tables
+// A second client for a second database
+// The point is not that the code differs
+// It is that this one cannot reach the payment tables at all
 @Injectable()
 export class NotificationsPrismaService
   extends PrismaClient
@@ -26,7 +26,7 @@ export class NotificationsPrismaService
       adapter: new PrismaPg({ connectionString: url }),
     });
 
-    // Parsed rather than logged whole, the connection string carries a password
+    // Parsed, not logged whole, because the string carries a password
     const { hostname, port, pathname } = new URL(url);
     this.target = `${hostname}:${port}${pathname}`;
   }

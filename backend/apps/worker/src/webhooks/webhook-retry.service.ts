@@ -20,9 +20,8 @@ export class WebhookRetryService {
     @InjectQueue(WEBHOOK_QUEUE) private readonly queue: Queue,
   ) {}
 
-  // This is what makes Redis optional rather than load bearing. Whether a job
-  // was lost in an outage or is simply due for its next try, the row in Postgres
-  // says so, and this puts it back on the queue
+  // This is what makes Redis optional rather than load bearing
+  // Lost in an outage or simply due, the row in Postgres says so
   @Cron(CronExpression.EVERY_10_SECONDS)
   async sweep(): Promise<void> {
     try {
@@ -40,8 +39,9 @@ export class WebhookRetryService {
         return;
       }
 
-      // No status change here. The row stays PENDING until a worker actually
-      // reports back, so a job lost between here and Redis is simply found again
+      // No status change here
+      // The row stays PENDING until a worker reports back
+      // A job lost between here and Redis is found again next sweep
       await enqueueDeliveries(this.queue, due);
 
       this.logger.log(`requeued ${due.length} webhook deliveries`);

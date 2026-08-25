@@ -16,8 +16,7 @@ export class QuoteController {
       query.cryptoCurrency,
     );
 
-    // Every amount leaves as a string. A JSON number is a double once it lands,
-    // and satoshis will outgrow what a double holds exactly
+    // A string again, for the same reason as the payment response
     return {
       fiatAmount: quote.fiatAmount.toString(),
       fiatCurrency: quote.fiatCurrency,
