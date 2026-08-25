@@ -16,12 +16,12 @@ import {
 
 type Tx = Prisma.TransactionClient;
 
-// Small on purpose. Every row in a batch is held under a lock until the whole
-// batch commits, so a big one keeps a transaction open longer for no gain
+// Every row in a batch is locked until the whole batch commits
+// A bigger batch just holds the transaction open longer
 const BATCH_SIZE = 50;
 
-// One batch, two outputs. A merchant with no endpoint registered gives me no
-// deliveries and still gives me an event
+// One batch, two outputs
+// A merchant with no endpoint gives me no deliveries and still an event
 interface Claimed {
   deliveries: Enqueueable[];
   events: DomainEvent[];
@@ -37,36 +37,36 @@ export class OutboxRelayService {
     @InjectQueue(WEBHOOK_QUEUE) private readonly queue: Queue,
   ) {}
 
-  // Two ticks overlapping is fine and expected, see the claim query below. The
-  // interval is the floor on how late a webhook can be, so it is short
+  // Two ticks overlapping is fine, see the claim query below
+  // This interval is the floor on how late a webhook can be
   @Cron(CronExpression.EVERY_5_SECONDS)
   async relay(): Promise<void> {
     try {
       const { deliveries, events } = await this.claimBatch();
 
-      // Both deliberately after the commit. Enqueuing inside the transaction
-      // would hand out a job id for a row that a rollback then took away
+      // Both after the commit, deliberately
+      // Enqueuing inside would hand out a job id for a row a rollback removes
       await enqueueDeliveries(this.queue, deliveries);
 
       if (deliveries.length > 0) {
         this.logger.log(`queued ${deliveries.length} webhook deliveries`);
       }
 
-      // Last, and it never throws. A pub/sub problem must not stop a webhook
+      // Last, and it never throws
+      // A pub/sub problem must not stop a webhook
       await this.publisher.publish(events);
     } catch (error) {
-      // Swallowed. The rows are still unpublished and the next tick is 5
-      // seconds away, so there is nothing here worth crashing the app over
+      // Swallowed
+      // The rows are still unpublished and the next tick is 5 seconds away
       this.logger.error(`relay failed: ${String(error)}`);
     }
   }
 
   private async claimBatch(): Promise<Claimed> {
     return this.prisma.$transaction(async (tx) => {
-      // SKIP LOCKED is what makes a second relay tick harmless: it walks past
-      // any row the first one is already holding instead of queueing behind it.
-      // Plain FOR UPDATE would block, then hand over rows that are by then
-      // already published
+      // FOR UPDATE locks the rows I read so nobody else can take them
+      // SKIP LOCKED then tells a second tick to walk past anything I hold
+      // Without it the second tick waits, then wakes up holding published rows
       const events = await tx.$queryRaw<OutboxEvent[]>`
         SELECT * FROM outbox_event
         WHERE "publishedAt" IS NULL
@@ -85,8 +85,8 @@ export class OutboxRelayService {
         deliveries.push(...(await this.fanOut(tx, event)));
       }
 
-      // Last, so a crash anywhere above rolls the whole thing back and leaves
-      // the rows unpublished. Marking first would lose the event instead
+      // Last, so a crash above rolls back and leaves the rows unpublished
+      // Marking first would lose the event instead
       await tx.outboxEvent.updateMany({
         where: { id: { in: events.map((event) => event.id) } },
         data: { publishedAt: new Date() },
@@ -96,8 +96,8 @@ export class OutboxRelayService {
     });
   }
 
-  // One event becomes one delivery row per endpoint that wants it. A merchant
-  // with no endpoints produces none, and the event is still marked published:
+  // One delivery row per endpoint that wants it
+  // A merchant with no endpoints produces none and is still published
   // published means the relay is done with it, not that anyone was told
   private async fanOut(tx: Tx, event: OutboxEvent): Promise<Enqueueable[]> {
     const endpoints = await tx.webhookEndpoint.findMany({
@@ -128,26 +128,26 @@ export class OutboxRelayService {
         eventType: event.eventType,
         payload: this.envelope(event),
         maxAttempts: MAX_ATTEMPTS,
-        // Due immediately. The retry sweep reads this column, so a job that
-        // never made it into Redis still has a time on it
+        // Due immediately
+        // The sweep reads this, so a job lost before Redis still has a time
         nextAttemptAt: new Date(),
       })),
-      // The unique index on endpoint plus event is the referee. A relay that
-      // dies after this insert and before the publish mark will run the whole
-      // batch again, and this is what stops the second run duplicating it
+      // The unique index on endpoint plus event is the referee
+      // A relay that dies after this insert runs the batch again
+      // skipDuplicates is what stops the second run sending a second copy
       skipDuplicates: true,
     });
 
-    // Read back rather than trusting the insert count, so rows that a previous
-    // crashed run created get picked up and queued here too
+    // Read back rather than trusting the insert count
+    // Rows a previous crashed run created get picked up and queued too
     return tx.webhookDelivery.findMany({
       where: { outboxEventId: event.id },
       select: { id: true, updatedAt: true },
     });
   }
 
-  // What goes on the channel. Not the webhook body, on purpose: that one is a
-  // contract with merchants, this one is mine to change
+  // What goes on the channel, and not the webhook body
+  // That one is a contract with merchants, this one is mine to change
   private domainEvent(event: OutboxEvent): DomainEvent {
     return {
       id: event.id,
@@ -159,8 +159,8 @@ export class OutboxRelayService {
     };
   }
 
-  // The exact object the merchant will receive. Frozen into the delivery row
-  // now, because a retry has to send the same bytes it signed the first time
+  // The exact object the merchant receives, frozen into the row now
+  // A retry has to send the same bytes it signed the first time
   private envelope(event: OutboxEvent): Prisma.InputJsonObject {
     return {
       id: event.id,

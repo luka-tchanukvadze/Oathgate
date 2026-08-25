@@ -13,7 +13,7 @@ import { signPayload } from './webhook-signature';
 
 interface SendOutcome {
   ok: boolean;
-  // Null when nothing answered at all, so a timeout and a 500 stay tellable apart
+  // Null when nothing answered, so a timeout and a 500 stay distinguishable
   status: number | null;
   error: string | null;
   durationMs: number;
@@ -39,14 +39,14 @@ export class WebhookSenderService {
       return;
     }
 
-    // The queue can hand me the same job twice and the retry sweep can queue one
-    // a worker is already holding. Anything not PENDING is already finished with
+    // The queue can hand me the same job twice
+    // Anything not PENDING is already finished with
     if (delivery.status !== WebhookDeliveryStatus.PENDING) {
       return;
     }
 
-    // FAILED rather than DEAD_LETTER: nothing went wrong, the merchant turned
-    // this endpoint off, and it should not show up in a list of things to chase
+    // FAILED, not DEAD_LETTER, because nothing actually went wrong
+    // The merchant turned this endpoint off, so it is not one to chase
     if (delivery.endpoint.disabledAt) {
       await this.prisma.webhookDelivery.update({
         where: { id: deliveryId },
@@ -56,8 +56,9 @@ export class WebhookSenderService {
       return;
     }
 
-    // Serialized once. This exact string is what gets signed and what gets sent,
-    // and doing it twice would risk signing bytes I did not send
+    // Serialized once
+    // This exact string is both signed and sent
+    // Doing it twice risks signing bytes I did not send
     const body = JSON.stringify(delivery.payload);
     const timestamp = Math.floor(Date.now() / 1_000);
     const secret = this.cipher.decrypt(delivery.endpoint.secretCiphertext);
@@ -89,13 +90,13 @@ export class WebhookSenderService {
         headers: { 'content-type': 'application/json', ...headers },
         body,
         signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
-        // Not followed. A url that passed the check at registration time and
-        // then redirects to an internal address would walk straight around it,
-        // and a 3xx counts as a failure here anyway
+        // Redirects are not followed
+        // A url that passed the check could still 302 to 169.254.169.254
+        // A 3xx counts as a failure here anyway
         redirect: 'manual',
       });
 
-      // Nothing reads the response, and leaving it unread holds the socket open
+      // Nothing reads the body, and leaving it unread holds the socket open
       await response.body?.cancel();
 
       return {
@@ -120,12 +121,11 @@ export class WebhookSenderService {
     maxAttempts: number,
     outcome: SendOutcome,
   ): Promise<void> {
-    // Read off the row rather than the constant, because a manual replay raises
-    // this delivery's own budget without changing the policy for everyone else
+    // Read off the row, not the constant
+    // A manual replay raises this one delivery's budget, not the policy
     const exhausted = attempt >= maxAttempts;
 
-    // One transaction, so a delivery can never claim more attempts than it has
-    // rows to show for
+    // One transaction, so attempts can never exceed the rows to show for it
     await this.prisma.$transaction([
       this.prisma.webhookAttempt.create({
         data: {
@@ -147,8 +147,7 @@ export class WebhookSenderService {
               ? WebhookDeliveryStatus.DEAD_LETTER
               : WebhookDeliveryStatus.PENDING,
           deliveredAt: outcome.ok ? new Date() : null,
-          // Null means there is nothing more to try, which is what the retry
-          // sweep uses to leave a row alone
+          // Null means nothing more to try, and the sweep skips the row
           nextAttemptAt:
             outcome.ok || exhausted ? null : this.nextAttemptAt(attempt),
         },

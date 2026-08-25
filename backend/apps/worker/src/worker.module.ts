@@ -28,8 +28,9 @@ import { WebhookSenderService } from './webhooks/webhook-sender.service';
     WebhookSenderService,
     WebhookProcessor,
     WebhookRetryService,
-    // The decrypt half. The api keeps its own instance for encrypting, which is
-    // fine, it is a key from config and not shared state
+    // The decrypt half
+    // The api has its own instance to encrypt with, and that is fine
+    // It is a key read from config, not shared state
     SecretCipher,
   ],
 })

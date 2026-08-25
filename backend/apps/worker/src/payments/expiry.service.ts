@@ -8,17 +8,15 @@ export class ExpiryService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  // Nothing calls this. A payment nobody paid would otherwise sit PENDING
-  // forever, and a merchant's dashboard would fill with orders that can never
-  // resolve. Once a minute is plenty: the work is one indexed update, and a
-  // payment marked expired 40 seconds late harms nobody
+  // Nothing calls this
+  // Without it a payment nobody paid sits PENDING for ever
+  // Once a minute is plenty, the work is one indexed update
   @Cron(CronExpression.EVERY_MINUTE)
   async sweep(): Promise<void> {
     try {
-      // One statement, and the status is checked inside it. The version that
-      // selects first and updates afterwards can overwrite a payment that
-      // settled in between, leaving a row that says EXPIRED while the ledger
-      // says it was paid
+      // One statement, with the status checked inside it
+      // Select first and update after, and I overwrite a payment that settled
+      // The row would say EXPIRED while the ledger says PAID
       const { count } = await this.prisma.payment.updateMany({
         where: {
           status: PaymentStatus.PENDING,
@@ -27,15 +25,15 @@ export class ExpiryService {
         data: { status: PaymentStatus.EXPIRED },
       });
 
-      // PENDING means nothing arrived. From phase 4 a payment with coins on the
-      // way sits in CONFIRMING instead, which this query cannot touch, so a
-      // customer who sent in time is never expired out from under a slow chain
+      // PENDING means nothing arrived
+      // From phase 4 a customer whose coins are on the way sits in CONFIRMING
+      // This query cannot touch those, so a slow chain never costs them
       if (count > 0) {
         this.logger.log(`expired ${count} payments`);
       }
     } catch (error) {
-      // Swallowed on purpose. A failed sweep is not urgent, the next one is a
-      // minute away, and letting it throw would only fill the log with noise
+      // Swallowed
+      // A failed sweep is not urgent and the next one is a minute away
       this.logger.error(`sweep failed: ${String(error)}`);
     }
   }
