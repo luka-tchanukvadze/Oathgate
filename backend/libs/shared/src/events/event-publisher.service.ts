@@ -15,28 +15,23 @@ export class EventPublisher implements OnModuleDestroy {
 
     this.target = redisTarget(url);
 
-    // Its own connection, and its own retry policy, which is why the queue's
-    // setting is spread first and then overridden. The queue needs commands to
-    // wait forever because a worker holds a blocking read open. A publish is the
-    // opposite: it runs on a 5 second clock, so it has to fail now rather than
-    // queue up behind a Redis that is down
+    // I override the queue's retry policy here. A worker can wait forever on a
+    // blocking read, but this runs on a 5 second clock and has to fail fast
     this.redis = new Redis({
       ...redisConnection(url),
       maxRetriesPerRequest: 1,
       enableOfflineQueue: false,
     });
 
-    // Otherwise a dropped connection surfaces as an unhandled error event and
-    // takes the process with it
+    // Otherwise a dropped connection is an unhandled error and takes the process
     this.redis.on('error', (error) => {
       this.logger.error(`redis at ${this.target}: ${error.message}`);
     });
   }
 
-  // Best effort on purpose, and this is the one thing to remember about it.
-  // Redis pub/sub has no durability: a message published while nothing is
-  // subscribed is gone, not queued. Webhooks survive an outage because their
-  // deliveries are rows in Postgres. These do not
+  // Best effort, and that is the thing to remember. Pub/sub keeps nothing: a
+  // message sent with no subscriber is gone, not queued. Webhooks survive an
+  // outage because they are rows in Postgres, these do not
   async publish(events: DomainEvent[]): Promise<void> {
     if (events.length === 0) {
       return;
@@ -49,9 +44,8 @@ export class EventPublisher implements OnModuleDestroy {
         pipeline.publish(EVENTS_CHANNEL, JSON.stringify(event));
       }
 
-      // exec resolves with a [error, result] pair per command and throws for
-      // none of them. Without this check a publish that failed on every single
-      // event still logged success, which is worse than the failure
+      // exec never throws, it hands back an [error, result] per command. Without
+      // this a publish that failed on every event still logged success
       const results = await pipeline.exec();
       const failed = (results ?? []).filter(([error]) => error !== null).length;
 
@@ -65,8 +59,8 @@ export class EventPublisher implements OnModuleDestroy {
 
       this.logger.log(`published ${events.length} events`);
     } catch (error) {
-      // Swallowed rather than rethrown, so a pub/sub problem can never stop a
-      // webhook going out. The two paths share a relay, not a fate
+      // Swallowed so a pub/sub problem never stops a webhook. Same relay, and
+      // deliberately not the same fate
       this.logger.error(`publish failed: ${String(error)}`);
     }
   }
