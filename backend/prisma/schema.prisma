@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client"
   output   = "../libs/shared/src/generated/prisma"
@@ -56,7 +53,6 @@ model Merchant {
   // hash, a password is a human word I only ever compare against one known row
   passwordHash String
 
-  // What I pay them out in
   settlementCurrency String @db.VarChar(10)
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
@@ -225,8 +221,8 @@ model ApiKey {
 
   lastUsedAt DateTime? @db.Timestamptz(3)
 
-  // Null means active. Revoking never deletes, because payments made with this
-  // key still need explaining afterwards
+  // Revoking never deletes
+  // Payments made with this key still need explaining afterwards
   revokedAt DateTime? @db.Timestamptz(3)
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
@@ -329,11 +325,10 @@ model WebhookEndpoint {
   // Plain, so the dashboard can name a secret it can no longer show
   secretPrefix String @db.VarChar(24)
 
-  // Which events this endpoint wants. Empty means all of them
+  // Empty means all of them
   events String[]
 
-  // Null means active. Disabling never deletes, because the delivery history
-  // still points here
+  // Disabling never deletes, because the delivery history still points here
   disabledAt DateTime? @db.Timestamptz(3)
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
@@ -394,7 +389,6 @@ model WebhookDelivery {
   webhookAttempts WebhookAttempt[]
 
   @@unique([endpointId, outboxEventId])
-  // What the retry sweep reads
   @@index([status, nextAttemptAt])
   // merchantId and mode are copied off the endpoint on purpose. Every dashboard
   // query filters on both, and this is the highest volume table in the system

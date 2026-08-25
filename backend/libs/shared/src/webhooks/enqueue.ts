@@ -2,9 +2,8 @@ import { Queue } from 'bullmq';
 import { WEBHOOK_JOB } from '@app/shared';
 import { webhookJobId } from './webhook.constants';
 
-// Redis is configured to retry a command forever rather than fail it, which is
-// right for a worker holding a blocking read and wrong for anything called from
-// a cron or a request. Without a deadline a dead Redis hangs the caller instead
+// Redis retries a command for ever rather than failing it
+// Right for a worker, wrong for anything on a clock or in a request
 const ENQUEUE_TIMEOUT_MS = 5_000;
 
 export interface Enqueueable {
@@ -12,9 +11,8 @@ export interface Enqueueable {
   updatedAt: Date;
 }
 
-// Losing these is survivable and that is the whole design. The rows are already
-// committed with a nextAttemptAt, so the retry sweep finds anything that never
-// reached the queue
+// Losing these is survivable, and that is the design
+// The rows are committed with a nextAttemptAt, so the sweep finds them
 export async function enqueueDeliveries(
   queue: Queue,
   deliveries: Enqueueable[],
@@ -45,8 +43,8 @@ export async function enqueueDeliveries(
       }),
     ]);
   } finally {
-    // Losing the race does not cancel the timer, and this runs every 5 seconds.
-    // Without this the process carries a drift of live timers for no reason
+    // Losing the race does not cancel the timer, and this runs every 5 seconds
+    // Without this the process carries a drift of live timers
     clearTimeout(timer);
   }
 }
