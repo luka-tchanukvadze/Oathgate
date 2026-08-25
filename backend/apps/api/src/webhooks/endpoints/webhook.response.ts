@@ -1,7 +1,7 @@
 import { type WebhookEndpoint } from '@app/shared';
 
-// secretCiphertext is deliberately absent. It is in the row, it is never in a
-// response, and the prefix is enough to tell two endpoints apart
+// secretCiphertext is deliberately absent
+// The prefix is enough to tell two endpoints apart
 export function toEndpointResponse(endpoint: WebhookEndpoint) {
   return {
     id: endpoint.id,

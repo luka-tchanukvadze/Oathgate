@@ -2,8 +2,9 @@ import { IsIn, IsNumberString } from 'class-validator';
 import { SUPPORTED_CRYPTO, SUPPORTED_FIAT } from '@app/shared';
 
 export class QuoteQueryDto {
-  // A string, not a number. Once a JS number touches an amount it is a double,
-  // and no_symbols also rejects a decimal point, which forces minor units
+  // A string, not a number
+  // Once a JS number touches an amount it is a double
+  // no_symbols also rejects a decimal point, which forces minor units
   @IsNumberString({ no_symbols: true })
   fiatAmount!: string;
 

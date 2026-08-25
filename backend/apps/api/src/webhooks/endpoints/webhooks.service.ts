@@ -14,8 +14,7 @@ import {
 import { CreateEndpointDto } from './dto/create-endpoint.dto';
 import { assertDeliverableUrl } from './webhook-url';
 
-// Long enough that guessing it is not a strategy. The merchant copies it once
-// and stores it their end
+// Long enough that guessing it is not a strategy
 const SECRET_BYTES = 24;
 
 @Injectable()
@@ -25,8 +24,8 @@ export class WebhooksService {
     private readonly cipher: SecretCipher,
   ) {}
 
-  // The plain secret is returned here and never again, the same contract as an
-  // API key. What goes in the row is the encrypted form
+  // The plain secret is returned here and never again, like an API key
+  // What goes in the row is the encrypted form
   async create(
     merchantId: string,
     dto: CreateEndpointDto,
@@ -68,8 +67,8 @@ export class WebhooksService {
     });
   }
 
-  // Disabled, never deleted. The delivery history points at this row, and a
-  // merchant asking "what happened last Tuesday" deserves an answer
+  // Disabled, never deleted
+  // The delivery history points here, and last Tuesday still needs an answer
   async disable(merchantId: string, id: string): Promise<WebhookEndpoint> {
     const { count } = await this.prisma.webhookEndpoint.updateMany({
       where: { id, merchantId, disabledAt: null },
@@ -83,8 +82,8 @@ export class WebhooksService {
     return this.prisma.webhookEndpoint.findUniqueOrThrow({ where: { id } });
   }
 
-  // Read back only when something is about to sign with it. Nothing that
-  // answers an HTTP request ever calls this
+  // Read back only when something is about to sign with it
+  // Nothing that answers an HTTP request calls this
   async signingSecret(endpointId: string): Promise<string> {
     const endpoint = await this.prisma.webhookEndpoint.findUniqueOrThrow({
       where: { id: endpointId },

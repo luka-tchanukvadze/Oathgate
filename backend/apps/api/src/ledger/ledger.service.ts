@@ -11,25 +11,24 @@ export interface Transfer {
   paymentId?: string;
 }
 
-// Knows nothing about payments. Legs in, balanced entries out, which is what
-// lets refunds and fees reuse it later without touching this file
+// Knows nothing about payments
+// Legs in, balanced entries out, so refunds and fees can reuse it
 @Injectable()
 export class LedgerService {
   async post(tx: Tx, transfer: Transfer): Promise<string> {
     const debits = this.sumOf(transfer.legs, EntryDirection.DEBIT);
     const credits = this.sumOf(transfer.legs, EntryDirection.CREDIT);
 
-    // The one invariant the whole design exists to protect. I would rather lose
-    // a payment than write books that do not balance
+    // The one invariant the whole design exists to protect
+    // I would rather lose a payment than write books that do not balance
     if (debits !== credits) {
       throw new Error(
         `transfer does not balance: ${debits} debit against ${credits} credit`,
       );
     }
 
-    // Sorted, so every transfer in the system takes its row locks in the same
-    // order whatever accounts it touches. Two transfers taking the same two
-    // locks in opposite orders would wait on each other forever
+    // Sorted, so every transfer takes its row locks in the same order
+    // Two taking them in opposite orders would wait on each other for ever
     const ordered = [...transfer.legs].sort((left, right) =>
       left.accountId < right.accountId ? -1 : 1,
     );
@@ -52,8 +51,8 @@ export class LedgerService {
         },
       });
 
-      // Grows the account when the entry is on its normal side, shrinks it
-      // otherwise. The balance is only ever a running total of these rows
+      // Grows the account on its normal side, shrinks it otherwise
+      // The balance is only ever a running total of these rows
       const signed =
         leg.direction === NORMAL_SIDE[leg.kind] ? leg.amount : -leg.amount;
 

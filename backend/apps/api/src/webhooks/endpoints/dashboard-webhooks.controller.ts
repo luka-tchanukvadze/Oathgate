@@ -17,8 +17,9 @@ import { CreateEndpointDto } from './dto/create-endpoint.dto';
 import { toEndpointResponse } from './webhook.response';
 import { WebhooksService } from './webhooks.service';
 
-// Dashboard only. A merchant's server has no business registering where its own
-// notifications go, that is a decision a human makes
+// Dashboard only
+// A merchant's server does not choose where its own notifications go
+// That is a decision a human makes
 @Controller('dashboard/webhook-endpoints')
 @UseGuards(SessionGuard)
 export class DashboardWebhooksController {
@@ -48,8 +49,8 @@ export class DashboardWebhooksController {
     return { data: endpoints.map(toEndpointResponse) };
   }
 
-  // DELETE, but it disables rather than removes. The verb matches what the
-  // merchant means, the row stays because the deliveries reference it
+  // DELETE, but it disables rather than removes
+  // The verb matches what the merchant means, and deliveries point here
   @Delete(':id')
   async disable(
     @CurrentSession() session: AuthenticatedSession,

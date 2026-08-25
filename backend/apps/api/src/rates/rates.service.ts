@@ -6,13 +6,14 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@app/shared';
 
-// 1 minute. The free upstream tier rate-limits hard, and a price is not
-// meaningfully staler at 59 seconds than at 1
+// 1 minute
+// The free upstream tier rate-limits hard
+// A price is not meaningfully staler at 59 seconds than at 1
 const FRESH_MS = 60_000;
 
-// 10 minutes. How old a cached price I will still quote from while the
-// upstream is down, past which I would rather refuse than promise a number I
-// cannot defend
+// 10 minutes
+// How stale a cached price I will still quote while the upstream is down
+// Past that I would rather refuse than promise a number I cannot defend
 const STALE_CEILING_MS = 10 * 60_000;
 
 const UPSTREAM_IDS: Record<string, string> = {
@@ -28,8 +29,8 @@ interface CachedRate {
 export class RatesService {
   private readonly logger = new Logger(RatesService.name);
 
-  // In process, because phase 1 is one process. This moves to Redis when the
-  // worker splits out and there are two of them able to disagree
+  // In process, because phase 1 was one process
+  // This wants to move to Redis now that two processes could disagree
   private readonly cache = new Map<string, CachedRate>();
 
   constructor(private readonly config: ConfigService) {}
@@ -103,8 +104,8 @@ export class RatesService {
       );
     }
 
-    // The double exists for exactly one line. JSON has no other number type,
-    // and a double holds far more digits than a price ever carries
+    // The double exists for exactly one line
+    // JSON has no other number type, and a price never needs that precision
     return new Prisma.Decimal(price);
   }
 }
