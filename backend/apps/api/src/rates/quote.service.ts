@@ -2,8 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { cryptoBaseUnits, fiatExponent, Prisma } from '@app/shared';
 import { RatesService } from './rates.service';
 
-// 15 minutes. Long enough for someone to open a wallet app, short enough
-// that I am not underwriting a large move in the price for free
+// 15 minutes
+// Long enough to open a wallet app
+// Short enough that I am not underwriting a price move for free
 const QUOTE_TTL_MS = 15 * 60_000;
 
 export interface Quote {
@@ -30,9 +31,9 @@ export class QuoteService {
       .pow(fiatExponent(fiatCurrency))
       .mul(rate);
 
-    // Rounded up, so a fully paid invoice is never short. The customer pays at
-    // most one base unit over the sticker price, which is worth nothing, while
-    // rounding down would leave every payment slightly unpaid forever
+    // Rounded up, so a fully paid invoice is never short
+    // The customer pays at most one satoshi over, which is worth nothing
+    // Rounding down leaves every payment slightly unpaid for ever
     const amount = new Prisma.Decimal(fiatAmount.toString())
       .mul(cryptoBaseUnits(cryptoCurrency))
       .div(divisor)

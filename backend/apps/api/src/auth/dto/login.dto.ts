@@ -1,7 +1,6 @@
 import { IsEmail, IsString } from 'class-validator';
 
-// The ! is because nothing in this file assigns these. The validation pipe
-// builds the instance from the request body before a handler ever sees it
+// The ! is because the validation pipe builds this, not any code in here
 export class LoginDto {
   @IsEmail()
   email!: string;

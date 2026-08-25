@@ -5,9 +5,9 @@ import { KeyMode } from '@app/shared';
 export const DEFAULT_LIMIT = 50;
 export const MAX_LIMIT = 200;
 
-// mode is required, not optional. An API key is a mode, but a browser has a
-// toggle, so on this side it has to arrive explicitly and be checked against
-// the enum before it ever reaches a WHERE clause
+// mode is required here, not optional
+// A key carries its own mode, a browser has a toggle
+// So it arrives explicitly and is checked before reaching a WHERE clause
 export class ListEntriesDto {
   @IsEnum(KeyMode)
   mode!: KeyMode;
