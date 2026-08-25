@@ -18,9 +18,9 @@ import { LedgerService } from '../ledger/ledger.service';
 
 type Tx = Prisma.TransactionClient;
 
-// Anything else is either already done or a dead end. Whether a late payment
-// against an expired quote should settle is still an open question, so for now
-// it refuses loudly rather than guessing
+// Anything else is already done or has nowhere to go
+// Whether a late payment on an expired quote settles is still open
+// So it refuses loudly rather than guessing
 const SETTLEABLE: PaymentStatus[] = [
   PaymentStatus.PENDING,
   PaymentStatus.CONFIRMING,
@@ -45,8 +45,8 @@ export class SettlementService {
     return this.prisma.$transaction(async (tx) => {
       const payment = await this.lockPayment(tx, merchantId, paymentId);
 
-      // Written inside this same transaction the first time round, so a retry
-      // can only ever see it once the money has actually landed
+      // Written inside this transaction the first time round
+      // A retry can only see it once the money has actually landed
       if (payment.status === PaymentStatus.PAID) {
         return { payment, alreadySettled: true };
       }
@@ -93,9 +93,8 @@ export class SettlementService {
         ],
       });
 
-      // Read here so the event can carry it. The notifications service has its
-      // own database and cannot join to mine, so anything a consumer needs has
-      // to travel with the event or it simply cannot act on it
+      // Read here so the event can carry it
+      // Notifications has its own database and cannot join to mine
       const merchant = await tx.merchant.findUniqueOrThrow({
         where: { id: merchantId },
         select: { email: true, name: true },
@@ -106,8 +105,8 @@ export class SettlementService {
         data: { status: PaymentStatus.PAID },
       });
 
-      // Written rather than published. A crash between committing the money and
-      // announcing it would otherwise lose the event for good
+      // Written rather than published
+      // A crash between committing the money and announcing it loses nothing
       await tx.outboxEvent.create({
         data: {
           aggregateType: 'payment',
@@ -125,8 +124,8 @@ export class SettlementService {
             cryptoCurrency: payment.cryptoCurrency,
             fiatAmount: payment.fiatAmount.toFixed(0),
             fiatCurrency: payment.fiatCurrency,
-            // The exponent travels with the amount so a consumer can format it
-            // exactly, instead of assuming every currency has two decimals
+            // The exponent travels too, so 1050 with 2 is unambiguous
+            // Otherwise a consumer assumes every currency has two decimals
             fiatExponent: fiatExponent(payment.fiatCurrency),
           },
         },
@@ -140,8 +139,8 @@ export class SettlementService {
     });
   }
 
-  // Locked first, and always first. Two code paths taking the same pair of
-  // locks in opposite orders is how a deadlock happens
+  // Locked first, and always first
+  // Two paths taking the same locks in opposite orders is a deadlock
   private async lockPayment(
     tx: Tx,
     merchantId: string,

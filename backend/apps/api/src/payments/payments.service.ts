@@ -6,8 +6,8 @@ import { placeholderAddress } from './address';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { DEFAULT_LIMIT, ListPaymentsDto } from './dto/list-payments.dto';
 
-// Named here rather than built from the mode, so the value reaching raw SQL can
-// only ever be one of these two strings
+// Named here rather than built from the mode
+// The value reaching raw SQL can then only be one of these two strings
 const DERIVATION_SEQUENCE: Record<KeyMode, string> = {
   [KeyMode.TEST]: 'payment_derivation_index_test',
   [KeyMode.LIVE]: 'payment_derivation_index_live',
@@ -36,8 +36,8 @@ export class PaymentsService {
       data: {
         merchantId: merchant.merchantId,
         apiKeyId: merchant.apiKeyId,
-        // Copied off the key. Nothing the caller sends can change which world
-        // this payment lives in
+        // Copied off the key
+        // Nothing the caller sends can change which world this payment is in
         mode: merchant.mode,
         reference: dto.reference,
         // Strings, not numbers, all the way into the Decimal columns
@@ -53,9 +53,9 @@ export class PaymentsService {
     });
   }
 
-  // merchantId and mode together, always. Either one alone is a bug: without
-  // the merchant a caller reads somebody else's payments, without the mode a
-  // live dashboard shows test money
+  // merchantId and mode together, always
+  // Without the merchant a caller reads somebody else's payments
+  // Without the mode a live dashboard shows test money
   async list(
     merchantId: string,
     mode: KeyMode,
@@ -69,21 +69,20 @@ export class PaymentsService {
         mode,
         ...(query.status ? { status: query.status } : {}),
         ...(query.reference ? { reference: query.reference } : {}),
-        // Ids are UUIDv7, so "older than the last one seen" is just "smaller"
+        // Ids are UUIDv7, which sort by time, so older is just smaller
         ...(query.startingAfter ? { id: { lt: query.startingAfter } } : {}),
       },
       orderBy: { id: 'desc' },
-      // One more than asked for. If it comes back there is another page, which
-      // saves running a COUNT over the whole table to find that out
+      // One row more than asked for
+      // If it comes back there is another page, and no COUNT was needed
       take: limit + 1,
     });
 
     return { data: rows.slice(0, limit), hasMore: rows.length > limit };
   }
 
-  // findFirst rather than findUnique, because the id alone is not the filter.
-  // A payment that belongs to someone else is a 404, not a 403, since a 403
-  // would confirm the id is real
+  // findFirst, because the id alone is not the filter
+  // Somebody else's payment is a 404, since a 403 confirms the id is real
   async get(merchantId: string, mode: KeyMode, id: string): Promise<Payment> {
     const payment = await this.prisma.payment.findFirst({
       where: { id, merchantId, mode },
@@ -96,9 +95,9 @@ export class PaymentsService {
     return payment;
   }
 
-  // Counting existing rows and adding one hands the same number to two
-  // concurrent requests, and two payments sharing an index would share an
-  // address. nextval cannot do that
+  // Counting rows and adding one gives two requests the same number
+  // Two payments on one index would share an address
+  // nextval cannot hand out the same number twice
   private async nextDerivationIndex(mode: KeyMode): Promise<number> {
     const sequence = DERIVATION_SEQUENCE[mode];
 

@@ -1,7 +1,7 @@
 import { type Payment } from '@app/shared';
 
-// Every amount leaves as a string. A JSON number becomes a double on the far
-// side, and satoshis will outgrow what a double holds exactly
+// Every amount leaves as a string
+// A JSON number is a double on the far side, and satoshis outgrow it
 export function toPaymentResponse(payment: Payment) {
   return {
     id: payment.id,

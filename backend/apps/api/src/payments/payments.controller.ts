@@ -24,7 +24,7 @@ import { toPaymentResponse } from './payment.response';
 import { PaymentsService } from './payments.service';
 import { SettlementService } from './settlement.service';
 
-// Matches the column, so an oversized key is a 400 rather than a write error
+// Matches the column, so an oversized key is a 400 not a write error
 const MAX_KEY_LENGTH = 255;
 
 @Controller('v1/payments')
@@ -42,8 +42,8 @@ export class PaymentsController {
     @Body() dto: CreatePaymentDto,
     @Headers('idempotency-key') idempotencyKey?: string,
   ) {
-    // Required, not optional. A retried create without one is a second invoice
-    // for the same order, and this endpoint is where money starts
+    // Required, not optional
+    // A retried create without one is a second invoice for the same order
     if (!idempotencyKey || idempotencyKey.length > MAX_KEY_LENGTH) {
       throw new BadRequestException(
         `Idempotency-Key header is required and must be at most ${MAX_KEY_LENGTH} characters`,
@@ -74,8 +74,8 @@ export class PaymentsController {
     return { data: page.data.map(toPaymentResponse), hasMore: page.hasMore };
   }
 
-  // Declared after the literal routes above, because Nest matches in the order
-  // the handlers appear and :id would otherwise swallow them
+  // Declared after the literal routes above
+  // Nest matches in handler order, so :id would swallow /v1/payments/x
   @Get(':id')
   async get(
     @CurrentMerchant() merchant: AuthenticatedMerchant,
@@ -90,10 +90,9 @@ export class PaymentsController {
     return toPaymentResponse(payment);
   }
 
-  // Stands in for the chain until phase 4 watches a real one. Test mode only:
-  // in live, the blockchain decides when money is real and no endpoint of mine
-  // gets a say. 200 rather than 201 because nothing new is created, and no
-  // idempotency key because settling twice is already a no-op
+  // Stands in for the chain until phase 4 watches a real one
+  // Test mode only: in live the blockchain decides, not an endpoint of mine
+  // Settling twice is already a no-op, so no idempotency key
   @Post(':id/confirm')
   @HttpCode(200)
   async confirm(

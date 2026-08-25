@@ -14,8 +14,8 @@ import { ModeQueryDto } from './dto/mode-query.dto';
 import { toPaymentResponse } from './payment.response';
 import { PaymentsService } from './payments.service';
 
-// Same service as the /v1 controller, different door. The guard and where mode
-// comes from are the only differences, and neither belongs in the service
+// Same service as the /v1 controller, different door
+// Only the guard and where mode comes from differ
 @Controller('dashboard/payments')
 @UseGuards(SessionGuard)
 export class DashboardPaymentsController {
