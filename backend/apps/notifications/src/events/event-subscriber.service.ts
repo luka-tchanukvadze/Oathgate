@@ -44,13 +44,14 @@ export class EventSubscriberService implements OnModuleInit, OnModuleDestroy {
       void this.receive(raw);
     });
 
-    // Both, and I need both
-    // ioredis connects from its constructor
-    // ready can fire before I attach this, and then I never hear it
-    // The listener covers reconnects, the call below covers this one
     this.redis.on('ready', () => void this.subscribe());
 
-    await this.subscribe();
+    // ioredis connects from its constructor
+    // On a fast Redis ready fires before the line above exists, and is missed
+    // Calling it unconditionally instead subscribes twice on a slow one
+    if (this.redis.status === 'ready') {
+      await this.subscribe();
+    }
   }
 
   private async subscribe(): Promise<void> {

@@ -1,5 +1,5 @@
-// This service's own database. It shares no tables with the gateway and cannot
-// read them: different connection string, different client, different migrations
+// This service's own database
+// Different connection string, different client, different migrations
 
 generator client {
   provider = "prisma-client"
@@ -12,30 +12,27 @@ datasource db {
   provider = "postgresql"
 }
 
-// One row per event this service has been told about. The id is the gateway's
-// own event id and it is the primary key, so a redelivered event collides
-// instead of arriving twice
+// The id is the gateway's event id, not one of mine
+// As the primary key it makes a redelivery collide instead of arriving twice
 model ReceivedEvent {
   id String @id @db.Uuid
 
   type       String @db.VarChar(60)
   merchantId String @db.Uuid
 
-  // A string, not an enum. This service only knows what the event told it, and
-  // a consumer that refuses to store an unfamiliar value is a consumer that
-  // breaks the day the gateway adds one
+  // A string, not an enum
+  // A consumer that refuses an unfamiliar value breaks the day one is added
   mode String @db.VarChar(10)
 
   payload Json @db.JsonB
 
   receivedAt DateTime @default(now()) @db.Timestamptz(3)
 
-  // Null until something has acted on it. Stamped when the email goes out, and
-  // it is what stops a redelivery sending a second copy
+  // Null until the email has gone out
+  // That is what stops a redelivery sending a second copy
   processedAt DateTime? @db.Timestamptz(3)
 
-  // A row that keeps failing shows up here rather than only in a log that has
-  // already scrolled past
+  // A row that keeps failing shows up here, not only in a log I have lost
   attempts  Int     @default(0)
   lastError String? @db.VarChar(500)
 
