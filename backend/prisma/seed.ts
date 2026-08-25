@@ -8,8 +8,8 @@ import {
   PrismaClient,
 } from '../libs/shared/src/generated/prisma/client';
 
-// Every step here has to survive a second run. A seed that only works against an
-// empty database is one I stop trusting the first time the schema moves
+// Every step here has to survive a second run
+// A seed that only works on an empty database is one I stop trusting
 
 const CRYPTO = 'BTC';
 const MODES = [KeyMode.TEST, KeyMode.LIVE];
@@ -22,8 +22,9 @@ function required(name: string): string {
   return value;
 }
 
-// OWASP's floor for argon2id. The memory cost is the part that matters, it is
-// what makes a GPU attack expensive rather than merely a slow loop
+// OWASP's floor for argon2id
+// The memory cost is the part that matters
+// It is what makes a GPU attack expensive, not just a slow loop
 function hashPassword(plain: string): Promise<string> {
   return argon2.hash(plain, {
     type: argon2.argon2id,
@@ -33,8 +34,9 @@ function hashPassword(plain: string): Promise<string> {
   });
 }
 
-// The plain key is returned once and never stored. Only the SHA-256 reaches the
-// table, so a stolen dump does not hand anyone working credentials
+// The plain key is returned once and never stored
+// Only the SHA-256 reaches the table
+// A stolen dump then hands nobody working credentials
 function newApiKey(mode: KeyMode) {
   const key = `sk_${mode.toLowerCase()}_${randomBytes(24).toString('hex')}`;
 
@@ -56,8 +58,8 @@ async function ensureAccounts(prisma: PrismaClient, merchantId: string) {
     ];
   });
 
-  // skipDuplicates compiles to ON CONFLICT DO NOTHING, which is what makes a
-  // second run a no-op instead of a unique violation
+  // skipDuplicates compiles to ON CONFLICT DO NOTHING
+  // That is what makes a second run a no-op, not a unique violation
   const { count } = await prisma.account.createMany({
     data: rows,
     skipDuplicates: true,
@@ -86,8 +88,7 @@ async function main() {
         settlementCurrency: 'GEL',
         passwordHash,
       },
-      // Only the password, so re-running does not quietly undo anything I
-      // changed by hand while testing
+      // Only the password, so re-running undoes nothing I changed by hand
       update: { passwordHash },
     });
 

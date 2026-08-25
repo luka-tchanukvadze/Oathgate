@@ -12,10 +12,9 @@ import { redisConnection } from './redis-connection';
       useFactory: (config: ConfigService) => ({
         connection: redisConnection(config.getOrThrow<string>('REDIS_URL')),
         defaultJobOptions: {
-          // Dropped the moment they finish, not kept as a recent-history
-          // window. Postgres already holds the delivery history, and a finished
-          // job that lingers keeps its id reserved: the retry sweep would then
-          // be silently refused when it tries to queue that delivery again
+          // Dropped as soon as they finish, because Postgres holds the history
+          // A finished job that lingers keeps its id reserved
+          // The retry sweep would then be silently refused
           removeOnComplete: true,
           removeOnFail: true,
         },
@@ -24,7 +23,6 @@ import { redisConnection } from './redis-connection';
     BullModule.registerQueue({ name: WEBHOOK_QUEUE }),
   ],
   providers: [QueueHealthService],
-  // BullModule, so anything importing this can inject the queue itself
   exports: [BullModule],
 })
 export class QueueModule {}

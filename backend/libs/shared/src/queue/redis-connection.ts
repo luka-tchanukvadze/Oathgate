@@ -7,9 +7,8 @@ export interface RedisConnection {
   maxRetriesPerRequest: null;
 }
 
-// The driver takes a URL in its constructor but not in an options object, and
-// the queue wants an options object. Parsed by hand, which also means the
-// password never has to be logged to say where I connected
+// The driver takes a URL, the queue wants an options object
+// Parsed by hand, so the password never has to be logged
 export function redisConnection(url: string): RedisConnection {
   const parsed = new URL(url);
 
@@ -19,9 +18,9 @@ export function redisConnection(url: string): RedisConnection {
     username: parsed.username || undefined,
     password: parsed.password || undefined,
     db: parsed.pathname.length > 1 ? Number(parsed.pathname.slice(1)) : 0,
-    // A worker holds a blocking read open, and the driver's default retry cap
-    // aborts one. Null is what BullMQ requires, and it also means a command
-    // sent while Redis is down waits forever rather than failing
+    // A worker holds a blocking read open and the default cap aborts it
+    // Null is what BullMQ requires
+    // It also means a command sent while Redis is down waits, not fails
     maxRetriesPerRequest: null,
   };
 }
