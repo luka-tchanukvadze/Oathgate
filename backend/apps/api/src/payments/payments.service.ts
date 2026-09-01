@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import type { AuthenticatedMerchant } from '../auth/auth.types';
 import { KeyMode, type Page, type Payment, PrismaService } from '@app/shared';
 import { QuoteService } from '../rates/quote.service';
-import { placeholderAddress } from './address';
+import { AddressService } from './address.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { DEFAULT_LIMIT, ListPaymentsDto } from './dto/list-payments.dto';
 
@@ -18,6 +18,7 @@ export class PaymentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly quotes: QuoteService,
+    private readonly addresses: AddressService,
   ) {}
 
   async create(
@@ -46,7 +47,7 @@ export class PaymentsService {
         cryptoAmount: quote.cryptoAmount.toString(),
         cryptoCurrency: quote.cryptoCurrency,
         quotedRate: quote.rate,
-        address: placeholderAddress(merchant.mode, derivationIndex),
+        address: this.addresses.derive(merchant.mode, derivationIndex),
         derivationIndex,
         expiresAt: quote.expiresAt,
       },
