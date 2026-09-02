@@ -31,6 +31,11 @@ export interface SettleResult {
   alreadySettled: boolean;
 }
 
+export interface ReverseResult {
+  payment: Payment;
+  reversed: boolean;
+}
+
 @Injectable()
 export class SettlementService {
   private readonly logger = new Logger(SettlementService.name);
@@ -160,6 +165,104 @@ export class SettlementService {
 
   // Locked first, and always first
   // Two paths taking the same locks in opposite orders is a deadlock
+  // A settled payment whose money left the chain again
+  // Nothing here updates or deletes a row: undoing a transfer means writing the
+  // opposite one and letting the pair sum to nothing
+  async reverse(
+    merchantId: string,
+    paymentId: string,
+    reason: string,
+  ): Promise<ReverseResult> {
+    return this.prisma.$transaction(async (tx) => {
+      const payment = await this.lockPayment(tx, merchantId, paymentId);
+
+      if (payment.status !== PaymentStatus.PAID) {
+        return { payment, reversed: false };
+      }
+
+      // Only what has not been undone already
+      // reversesId is unique, so a second attempt would fail the insert anyway,
+      // and this turns that into a quiet no-op instead of an error
+      const original = await tx.ledgerEntry.findMany({
+        where: { paymentId, reversedBy: null },
+        select: {
+          id: true,
+          accountId: true,
+          direction: true,
+          amount: true,
+          account: { select: { kind: true } },
+        },
+      });
+
+      if (original.length === 0) {
+        return { payment, reversed: false };
+      }
+
+      // Every entry mirrored, each pointing at the one it undoes
+      // The pair balanced before, so the mirror of the pair balances too
+      await this.ledger.post(tx, {
+        currency: payment.cryptoCurrency,
+        paymentId,
+        legs: original.map((entry) => ({
+          accountId: entry.accountId,
+          kind: entry.account.kind,
+          direction:
+            entry.direction === EntryDirection.CREDIT
+              ? EntryDirection.DEBIT
+              : EntryDirection.CREDIT,
+          amount: BigInt(entry.amount.toFixed(0)),
+          reversesId: entry.id,
+        })),
+      });
+
+      const taken = original
+        .filter(
+          (entry) =>
+            entry.account.kind === AccountKind.MERCHANT_BALANCE &&
+            entry.direction === EntryDirection.CREDIT,
+        )
+        .reduce((total, entry) => total + BigInt(entry.amount.toFixed(0)), 0n);
+
+      const merchant = await tx.merchant.findUniqueOrThrow({
+        where: { id: merchantId },
+        select: { email: true, name: true },
+      });
+
+      const reversed = await tx.payment.update({
+        where: { id: paymentId },
+        data: { status: PaymentStatus.REVERSED },
+      });
+
+      // A merchant who was told they were paid has to be told they were not
+      await tx.outboxEvent.create({
+        data: {
+          aggregateType: 'payment',
+          aggregateId: paymentId,
+          merchantId,
+          mode: payment.mode,
+          eventType: 'payment.reversed',
+          payload: {
+            paymentId,
+            merchantId,
+            mode: payment.mode,
+            reason,
+            merchantEmail: merchant.email,
+            merchantName: merchant.name,
+            cryptoAmount: taken.toString(),
+            cryptoCurrency: payment.cryptoCurrency,
+            fiatAmount: payment.fiatAmount.toFixed(0),
+            fiatCurrency: payment.fiatCurrency,
+            fiatExponent: fiatExponent(payment.fiatCurrency),
+          },
+        },
+      });
+
+      this.logger.warn(`reversed ${paymentId} taking back ${taken}: ${reason}`);
+
+      return { payment: reversed, reversed: true };
+    });
+  }
+
   private async lockPayment(
     tx: Tx,
     merchantId: string,

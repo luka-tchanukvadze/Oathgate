@@ -14,4 +14,8 @@ export interface TransferLeg {
   kind: AccountKind;
   direction: EntryDirection;
   amount: bigint;
+
+  // The entry this one undoes, on a reversal
+  // Unique in the database, so the same entry cannot be reversed twice
+  reversesId?: string;
 }
