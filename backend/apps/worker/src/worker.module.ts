@@ -8,6 +8,7 @@ import {
   SecretCipher,
 } from '@app/shared';
 import { BlockstreamClient } from './chain/blockstream.client';
+import { ChainWatcherService } from './chain/chain-watcher.service';
 import { ExpiryService } from './payments/expiry.service';
 import { OutboxRelayService } from './webhooks/outbox-relay.service';
 import { WebhookProcessor } from './webhooks/webhook.processor';
@@ -25,6 +26,7 @@ import { WebhookSenderService } from './webhooks/webhook-sender.service';
   ],
   providers: [
     BlockstreamClient,
+    ChainWatcherService,
     ExpiryService,
     OutboxRelayService,
     WebhookSenderService,
