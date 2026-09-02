@@ -51,7 +51,7 @@ describe('settlement under concurrency', () => {
         async $allOperations({ args, query }) {
           await sleep(QUERY_DELAY_MS);
 
-          return query(args);
+          return (await query(args)) as unknown;
         },
       },
     });
