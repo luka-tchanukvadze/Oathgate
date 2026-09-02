@@ -6,8 +6,10 @@ import {
   PrismaModule,
   QueueModule,
   SecretCipher,
+  SettlementModule,
 } from '@app/shared';
 import { BlockstreamClient } from './chain/blockstream.client';
+import { ChainSettlementService } from './chain/chain-settlement.service';
 import { ChainWatcherService } from './chain/chain-watcher.service';
 import { ExpiryService } from './payments/expiry.service';
 import { OutboxRelayService } from './webhooks/outbox-relay.service';
@@ -23,9 +25,11 @@ import { WebhookSenderService } from './webhooks/webhook-sender.service';
     PrismaModule,
     QueueModule,
     EventsModule,
+    SettlementModule,
   ],
   providers: [
     BlockstreamClient,
+    ChainSettlementService,
     ChainWatcherService,
     ExpiryService,
     OutboxRelayService,

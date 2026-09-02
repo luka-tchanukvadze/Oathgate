@@ -1,14 +1,14 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
-import { AccountsService } from './accounts.service';
 import { DashboardLedgerController } from './dashboard-ledger.controller';
 import { LedgerQueryService } from './ledger-query.service';
-import { LedgerService } from './ledger.service';
 
+// Reading only
+// Writing to the ledger moved to the shared lib, because the worker settles too
 @Module({
   imports: [AuthModule],
   controllers: [DashboardLedgerController],
-  providers: [LedgerService, AccountsService, LedgerQueryService],
-  exports: [LedgerService, AccountsService, LedgerQueryService],
+  providers: [LedgerQueryService],
+  exports: [LedgerQueryService],
 })
-export class LedgerModule {}
+export class DashboardLedgerModule {}

@@ -15,14 +15,13 @@ import {
 import type { AuthenticatedMerchant } from '../auth/auth.types';
 import { CurrentMerchant } from '../auth/decorators/current-merchant.decorator';
 import { ApiKeyGuard } from '../auth/guards/api-key.guard';
-import { KeyMode } from '@app/shared';
+import { KeyMode, SettlementService } from '@app/shared';
 import { IdempotencyService } from '../idempotency/idempotency.service';
 import { hashRequest } from '../idempotency/request-hash';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { ListPaymentsDto } from './dto/list-payments.dto';
 import { toPaymentResponse } from './payment.response';
 import { PaymentsService } from './payments.service';
-import { SettlementService } from './settlement.service';
 
 // Matches the column, so an oversized key is a 400 not a write error
 const MAX_KEY_LENGTH = 255;
