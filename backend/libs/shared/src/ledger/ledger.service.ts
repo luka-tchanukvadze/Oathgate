@@ -48,6 +48,7 @@ export class LedgerService {
           amount: leg.amount.toString(),
           currency: transfer.currency,
           paymentId: transfer.paymentId,
+          reversesId: leg.reversesId,
         },
       });
 
