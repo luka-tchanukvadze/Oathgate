@@ -41,7 +41,15 @@ export class SettlementService {
     private readonly accounts: AccountsService,
   ) {}
 
-  async settle(merchantId: string, paymentId: string): Promise<SettleResult> {
+  // received is what actually landed on the chain, which is not always what I
+  // asked for
+  // Left out, it falls back to the invoice, which is what the test endpoint
+  // wants because no coins moved at all
+  async settle(
+    merchantId: string,
+    paymentId: string,
+    received?: bigint,
+  ): Promise<SettleResult> {
     return this.prisma.$transaction(async (tx) => {
       const payment = await this.lockPayment(tx, merchantId, paymentId);
 
@@ -57,7 +65,18 @@ export class SettlementService {
         );
       }
 
-      const amount = BigInt(payment.cryptoAmount.toFixed(0));
+      const owed = BigInt(payment.cryptoAmount.toFixed(0));
+      const amount = received ?? owed;
+
+      // The books say what arrived, not what I hoped would
+      // Crediting the invoice while holding more makes the reconciliation job
+      // report drift on every overpaid invoice, and an alarm that cries wolf
+      // daily is worse than none
+      if (amount < owed) {
+        throw new ConflictException(
+          `${amount} received does not cover ${owed} owed`,
+        );
+      }
 
       const wallet = await this.accounts.house(
         tx,

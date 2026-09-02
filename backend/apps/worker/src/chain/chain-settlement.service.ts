@@ -17,6 +17,12 @@ const BATCH_SIZE = 25;
 // means an hour of a customer standing at a counter
 const MIN_CONFIRMATIONS = 1;
 
+// How long past expiry I wait before calling a short payment underpaid
+// Before the window closes, not enough yet and not enough ever look the same,
+// and coins can still be sitting unconfirmed when the clock runs out
+// Matches the watcher's late window, so it is still polling for this whole time
+const UNDERPAID_AFTER_MS = 60 * 60_000;
+
 // The shape the query below selects, named rather than written inline
 // Decimal is Prisma's own type and not a number, which is the whole point
 interface Candidate {
@@ -24,6 +30,7 @@ interface Candidate {
   merchantId: string;
   status: PaymentStatus;
   cryptoAmount: Prisma.Decimal;
+  expiresAt: Date;
   chainTxs: { amount: Prisma.Decimal; confirmations: number }[];
 }
 
@@ -56,6 +63,7 @@ export class ChainSettlementService {
           merchantId: true,
           status: true,
           cryptoAmount: true,
+          expiresAt: true,
           chainTxs: { select: { amount: true, confirmations: true } },
         },
       });
@@ -84,25 +92,66 @@ export class ChainSettlementService {
       .filter((tx) => tx.confirmations >= MIN_CONFIRMATIONS)
       .reduce((total, tx) => total + BigInt(tx.amount.toFixed(0)), 0n);
 
-    // Seen but not buried yet
-    // The customer gets to watch it move rather than staring at PENDING
     if (settled < owed) {
+      const giveUpAt = payment.expiresAt.getTime() + UNDERPAID_AFTER_MS;
+
+      // Short, and out of time to stop being short
+      if (Date.now() > giveUpAt) {
+        await this.markUnderpaid(payment.id, settled, owed);
+
+        return;
+      }
+
+      // Seen but not buried yet
+      // The customer gets to watch it move rather than staring at PENDING
       await this.markConfirming(payment.id, payment.status);
 
       return;
     }
 
     try {
+      // settled, not owed
+      // I hold what arrived, so that is what the books have to say I hold
       const result = await this.settlement.settle(
         payment.merchantId,
         payment.id,
+        settled,
       );
 
       if (!result.alreadySettled) {
-        this.logger.log(`settled ${payment.id} with ${settled} confirmed`);
+        const over = settled - owed;
+
+        this.logger.log(
+          over > 0n
+            ? `settled ${payment.id} with ${settled}, ${over} over`
+            : `settled ${payment.id} with ${settled}`,
+        );
       }
     } catch (error) {
       this.logger.error(`could not settle ${payment.id}: ${String(error)}`);
+    }
+  }
+
+  // A terminal state, so the guard is the status and not a timestamp
+  // Money is still at that address and still mine to sweep, this only says the
+  // invoice will not be settling itself
+  private async markUnderpaid(
+    paymentId: string,
+    settled: bigint,
+    owed: bigint,
+  ): Promise<void> {
+    const { count } = await this.prisma.payment.updateMany({
+      where: {
+        id: paymentId,
+        status: { in: [PaymentStatus.PENDING, PaymentStatus.CONFIRMING] },
+      },
+      data: { status: PaymentStatus.UNDERPAID },
+    });
+
+    if (count > 0) {
+      this.logger.warn(
+        `${paymentId} is underpaid, ${settled} of ${owed} arrived`,
+      );
     }
   }
 
