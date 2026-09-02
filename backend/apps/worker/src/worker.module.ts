@@ -9,6 +9,7 @@ import {
   SettlementModule,
 } from '@app/shared';
 import { BlockstreamClient } from './chain/blockstream.client';
+import { ChainReorgService } from './chain/chain-reorg.service';
 import { ChainSettlementService } from './chain/chain-settlement.service';
 import { ChainWatcherService } from './chain/chain-watcher.service';
 import { ExpiryService } from './payments/expiry.service';
@@ -29,6 +30,7 @@ import { WebhookSenderService } from './webhooks/webhook-sender.service';
   ],
   providers: [
     BlockstreamClient,
+    ChainReorgService,
     ChainSettlementService,
     ChainWatcherService,
     ExpiryService,
