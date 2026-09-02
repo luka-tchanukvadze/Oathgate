@@ -9,6 +9,7 @@ import {
   PrismaService,
   SettlementService,
 } from '@app/shared';
+import { MIN_CONFIRMATIONS } from './chain.constants';
 
 const BATCH_SIZE = 25;
 
@@ -16,8 +17,6 @@ const BATCH_SIZE = 25;
 // A block a day deep would cost more to rewrite than the chain has ever spent,
 // so past this I stop asking and treat the money as final
 const REVIEW_WINDOW_MS = 24 * 60 * 60_000;
-
-const MIN_CONFIRMATIONS = 1;
 
 interface Settled {
   id: string;

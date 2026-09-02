@@ -7,15 +7,9 @@ import {
   PrismaService,
   SettlementService,
 } from '@app/shared';
+import { MIN_CONFIRMATIONS } from './chain.constants';
 
 const BATCH_SIZE = 25;
-
-// How many blocks have to sit on top before I call it paid
-// A confirmation is not a second opinion, it is a price: reversing this now
-// means rebuilding that many blocks faster than everyone else put together
-// One is already far more than a coffee is worth stealing, and waiting six
-// means an hour of a customer standing at a counter
-const MIN_CONFIRMATIONS = 1;
 
 // How long past expiry I wait before calling a short payment underpaid
 // Before the window closes, not enough yet and not enough ever look the same,

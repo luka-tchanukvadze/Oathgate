@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { KeyMode, PaymentStatus, PrismaService } from '@app/shared';
 import { BlockstreamClient } from './blockstream.client';
+import { ADDRESS_TX_PAGE } from './chain.constants';
 import type { ChainTransaction } from './chain.types';
 
 // One sweep asks the explorer once per address, so this is also the request
@@ -97,7 +98,7 @@ export class ChainWatcherService {
       written += await this.record(payment, transaction, tip);
     }
 
-    await this.forgetReplaced(
+    await this.reconcile(
       payment.id,
       transactions.map((transaction) => transaction.txid),
     );
@@ -110,23 +111,33 @@ export class ChainWatcherService {
   // which is a different txid, so the unique index never sees a duplicate
   // The replaced one vanishes from the explorer and must vanish from here too,
   // or the sum counts money that will never arrive
-  private async forgetReplaced(
-    paymentId: string,
-    seen: string[],
-  ): Promise<void> {
-    const { count } = await this.prisma.chainTx.deleteMany({
-      where: {
-        paymentId,
-        // Only ones I have never seen in a block
-        // A confirmed transaction is not replaceable, and a chain that drops
-        // one is a reorg, which is a different problem with a different answer
-        blockHash: null,
-        txid: { notIn: seen },
-      },
+  private async reconcile(paymentId: string, seen: string[]): Promise<void> {
+    // A short page means I saw everything at this address
+    // At the cap I am looking at part of the picture, and a transaction being
+    // absent stops meaning it is gone
+    if (seen.length >= ADDRESS_TX_PAGE) {
+      return;
+    }
+
+    const { count: dropped } = await this.prisma.chainTx.deleteMany({
+      where: { paymentId, blockHash: null, txid: { notIn: seen } },
     });
 
-    if (count > 0) {
-      this.logger.log(`dropped ${count} replaced transactions`);
+    // One that was in a block and is not in the answer any more
+    // Its block lost, and the transaction did not survive into the new chain,
+    // so it is unconfirmed again and may never confirm at all
+    // The row stays, because the money is the reorg sweep's business, not mine
+    const { count: orphaned } = await this.prisma.chainTx.updateMany({
+      where: { paymentId, blockHash: { not: null }, txid: { notIn: seen } },
+      data: { blockHash: null, confirmations: 0 },
+    });
+
+    if (dropped > 0) {
+      this.logger.log(`dropped ${dropped} replaced transactions`);
+    }
+
+    if (orphaned > 0) {
+      this.logger.warn(`${orphaned} confirmed transactions left their block`);
     }
   }
 
