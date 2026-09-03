@@ -3,6 +3,10 @@ name: build and publish
 on:
   push:
     branches: [master]
+    # A frontend commit cannot change the image, so it should not rebuild it
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
 jobs:
@@ -41,12 +45,12 @@ jobs:
       WEBHOOK_SECRET_KEY: '0000000000000000000000000000000000000000000000000000000000000001'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # 24, not 22, because jest needs the synchronous vm module apis to load
       # the ESM only crypto packages the address derivation uses
       # The image itself runs 22, where plain node handles them fine
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -81,18 +85,17 @@ jobs:
 
   publish:
     needs: test
-    runs-on: ubuntu-latest
+    # A real arm64 machine, so no emulation
+    # The same build under QEMU on an x86 runner took about five times as long
+    runs-on: ubuntu-24.04-arm
 
     permissions:
       contents: read
       packages: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      # The Pi is arm64 and this runner is not, so the build runs under
-      # emulation. Slow, and the reason all three services share one image
-      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
 
       - uses: docker/login-action@v3
@@ -101,16 +104,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # This runner's own architecture, so no emulation and no push
-      # A bad COPY path or something the prune removed shows up here in a couple
-      # of minutes rather than twenty minutes into an emulated arm64 build
-      - name: dry run on the native architecture
+      # Built and kept locally so the next step can run it
+      # The push below reuses these layers, so this costs almost nothing
+      - name: build
         uses: docker/build-push-action@v6
         with:
           context: ./backend
           push: false
           load: true
           tags: oathgate:check
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       # Migrations run from inside this image, and the prune takes out
       # everything that is only a devDependency
@@ -119,7 +123,8 @@ jobs:
       - name: prove the pruned image can still migrate
         run: docker run --rm oathgate:check npx prisma migrate deploy --help
 
-      - uses: docker/build-push-action@v6
+      - name: push
+        uses: docker/build-push-action@v6
         with:
           context: ./backend
           platforms: linux/arm64
@@ -127,7 +132,6 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/oathgate:latest
             ghcr.io/${{ github.repository_owner }}/oathgate:${{ github.sha }}
-          # Layers survive between runs, so an unchanged package-lock skips the
-          # slowest step of an emulated build
+          # Layers survive between runs, so an unchanged lockfile skips npm ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
