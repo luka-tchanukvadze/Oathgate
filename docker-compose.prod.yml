@@ -1,0 +1,137 @@
+# What runs on the Pi
+#
+# Postgres and Redis publish no host ports at all. The three app containers
+# reach them by service name on this network, so there is nothing to collide
+# with whatever else the machine already runs, and nothing extra listening.
+#
+# Every service names only the variables it actually needs. Notifications never
+# sees the payments database or the webhook signing key, and that is the whole
+# point of it being a separate service.
+#
+# The memory limits do nothing until the memory cgroup is enabled on the Pi,
+# which needs a line in cmdline.txt and a reboot. They are written now so that
+# turning it on later is one change with an immediate effect rather than a
+# change followed by a round of guessing at numbers.
+
+name: oathgate
+
+x-app: &app
+  image: ghcr.io/luka-tchanukvadze/oathgate:latest
+  restart: unless-stopped
+  labels:
+    com.centurylinklabs.watchtower.enable: 'true'
+  depends_on:
+    migrate:
+      condition: service_completed_successfully
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: oathgate-postgres
+    restart: unless-stopped
+    mem_limit: 384m
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Creates the notifications database, once, when the volume is new
+      - ./docker/init-notifications-db.sh:/docker-entrypoint-initdb.d/10-notifications.sh:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    container_name: oathgate-redis
+    restart: unless-stopped
+    mem_limit: 96m
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Runs once and exits, and the three services below wait for it to succeed
+  # Migrating from each app's own start would have three containers racing the
+  # same tables, and a failure would leave a half started system instead of
+  # stopping the deploy
+  migrate:
+    image: ghcr.io/luka-tchanukvadze/oathgate:latest
+    container_name: oathgate-migrate
+    restart: 'no'
+    mem_limit: 256m
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      NOTIFICATIONS_DATABASE_URL: ${NOTIFICATIONS_DATABASE_URL}
+    command: >
+      sh -c "npx prisma migrate deploy &&
+             npx prisma migrate deploy --config apps/notifications/prisma.config.ts"
+
+  api:
+    <<: *app
+    container_name: oathgate-api
+    mem_limit: 320m
+    ports:
+      # Loopback only, the reverse proxy is what faces the internet
+      - '127.0.0.1:5002:5002'
+    environment:
+      NODE_ENV: production
+      PORT: 5002
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      WEBHOOK_SECRET_KEY: ${WEBHOOK_SECRET_KEY}
+      BTC_XPUB_TEST: ${BTC_XPUB_TEST}
+      DASHBOARD_ORIGIN: ${DASHBOARD_ORIGIN}
+      COINGECKO_API_KEY: ${COINGECKO_API_KEY:-}
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:5002/api').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  worker:
+    <<: *app
+    container_name: oathgate-worker
+    mem_limit: 320m
+    command: ['node', 'dist/apps/worker/src/main']
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      WEBHOOK_SECRET_KEY: ${WEBHOOK_SECRET_KEY}
+      BLOCKSTREAM_API_URL: ${BLOCKSTREAM_API_URL}
+
+  notifications:
+    <<: *app
+    container_name: oathgate-notifications
+    mem_limit: 256m
+    command: ['node', 'dist/apps/notifications/src/main']
+    environment:
+      NODE_ENV: production
+      NOTIFICATIONS_DATABASE_URL: ${NOTIFICATIONS_DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+
+volumes:
+  postgres_data:
+  redis_data:
