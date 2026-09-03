@@ -1,10 +1,17 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // One hop, because there is exactly one proxy in front of me
+  // Without this every request looks like it came from the proxy, and the five
+  // logins a minute limit becomes five a minute for the whole internet at once
+  // A larger number would let a caller forge the header and pick their own ip
+  app.set('trust proxy', 1);
 
   // One prefix for both /v1 and /dashboard
   // A reverse proxy can then hand /api to me and the rest to the dashboard
