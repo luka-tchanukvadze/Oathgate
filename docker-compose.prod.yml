@@ -1,17 +1,6 @@
 # What runs on the Pi
 #
-# Postgres and Redis publish no host ports at all. The three app containers
-# reach them by service name on this network, so there is nothing to collide
-# with whatever else the machine already runs, and nothing extra listening.
-#
-# Every service names only the variables it actually needs. Notifications never
-# sees the payments database or the webhook signing key, and that is the whole
-# point of it being a separate service.
-#
-# The memory limits do nothing until the memory cgroup is enabled on the Pi,
-# which needs a line in cmdline.txt and a reboot. They are written now so that
-# turning it on later is one change with an immediate effect rather than a
-# change followed by a round of guessing at numbers.
+# The memory limits are ignored until the cgroup is enabled in cmdline.txt
 
 name: oathgate
 

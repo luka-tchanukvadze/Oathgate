@@ -53,6 +53,12 @@ COPY --from=build /app/prisma.config.ts ./prisma.config.ts
 COPY --from=build /app/apps/notifications/prisma ./apps/notifications/prisma
 COPY --from=build /app/apps/notifications/prisma.config.ts ./apps/notifications/prisma.config.ts
 
+# The seed is the one thing that runs from source rather than from dist, and it
+# imports the generated client by relative path
+# A megabyte of generated code, and without it there is no merchant and no
+# house accounts, so nothing can settle
+COPY --from=build /app/libs/shared/src/generated ./libs/shared/src/generated
+
 USER oathgate
 
 ENV NODE_ENV=production
