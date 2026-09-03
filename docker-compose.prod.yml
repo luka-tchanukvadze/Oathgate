@@ -99,6 +99,9 @@ services:
       BTC_XPUB_TEST: ${BTC_XPUB_TEST}
       DASHBOARD_ORIGIN: ${DASHBOARD_ORIGIN}
       COINGECKO_API_KEY: ${COINGECKO_API_KEY:-}
+      # Only read by the seed, which runs as a one off against this service
+      SEED_MERCHANT_EMAIL: ${SEED_MERCHANT_EMAIL:-}
+      SEED_MERCHANT_PASSWORD: ${SEED_MERCHANT_PASSWORD:-}
     healthcheck:
       test:
         [
