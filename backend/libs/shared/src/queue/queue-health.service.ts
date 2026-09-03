@@ -24,15 +24,17 @@ export class QueueHealthService implements OnModuleInit {
   async onModuleInit(): Promise<void> {
     const target = redisTarget(this.config.getOrThrow<string>('REDIS_URL'));
 
+    let timer: NodeJS.Timeout | undefined;
+
     try {
       await Promise.race([
         this.queue.waitUntilReady(),
-        new Promise<never>((_, reject) =>
-          setTimeout(
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(
             () => reject(new Error(`no answer within ${READY_TIMEOUT_MS}ms`)),
             READY_TIMEOUT_MS,
-          ),
-        ),
+          );
+        }),
       ]);
 
       this.logger.log(`connected to ${target}`);
@@ -40,6 +42,11 @@ export class QueueHealthService implements OnModuleInit {
       this.logger.error(
         `redis at ${target} is not answering, webhooks will queue up: ${String(error)}`,
       );
+    } finally {
+      // Winning the race does not cancel the loser
+      // The timer would otherwise hold the event loop open after everything
+      // else has finished, which is what makes a test runner hang on exit
+      clearTimeout(timer);
     }
   }
 }
