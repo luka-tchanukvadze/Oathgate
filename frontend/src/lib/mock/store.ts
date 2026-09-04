@@ -21,11 +21,15 @@ import type {
   Payment,
   PaymentStatus,
   SystemEvent,
-  WebhookDelivery,
+  WebhookDeliveryDetail,
   WebhookEndpoint,
 } from '@/types';
 
 const CONFIRMATIONS_REQUIRED = 3;
+
+// Matches BACKOFF_SECONDS.length + 1 in the backend
+const MAX_ATTEMPTS = 7;
+const ENDPOINT_ID = 'whe_default';
 const WEBHOOK_URL = 'https://merchant.example.com/webhooks/oathgate';
 
 // Deterministic pseudo-random so the seeded data is the same every time. Real
@@ -85,13 +89,20 @@ function quoteSatoshis(fiatMinor: string): string {
   return (numerator % denominator === 0n ? whole : whole + 1n).toString();
 }
 
+// The API never puts a paymentId on a chain transaction, because they only ever
+// arrive attached to the payment they belong to. This store has no such nesting,
+// so it keeps the column and the accessors hand back plain ChainTx
+type StoredChainTx = ChainTx & { paymentId: string };
+
 interface MockState {
   merchant: Merchant;
   payments: Payment[];
-  chainTxs: ChainTx[];
+  chainTxs: StoredChainTx[];
   ledger: LedgerEntry[];
   apiKeys: ApiKey[];
-  webhooks: WebhookDelivery[];
+  // Kept with the payload, handed out without it in a list, which is exactly
+  // how the API splits them
+  webhooks: WebhookDeliveryDetail[];
 }
 
 const MERCHANT: Merchant = {
@@ -114,12 +125,11 @@ const REFERENCES = [
   'table-4',
 ];
 
-function seedPayment(index: number, status: PaymentStatus, mode: KeyMode, ageMinutes: number): Payment {
+function seedPayment(status: PaymentStatus, mode: KeyMode, ageMinutes: number): Payment {
   const fiatAmount = String(Math.floor(rand() * 24000) + 500);
   const createdAt = iso(-ageMinutes * 60000);
   return {
     id: id('pay'),
-    merchantId: MERCHANT.id,
     mode,
     reference: pick(REFERENCES),
     fiatAmount,
@@ -128,7 +138,6 @@ function seedPayment(index: number, status: PaymentStatus, mode: KeyMode, ageMin
     cryptoCurrency: 'BTC',
     quotedRate: RATE_GEL_PER_BTC,
     address: btcAddress(),
-    derivationIndex: 1000 + index,
     status,
     expiresAt: iso(-ageMinutes * 60000 + 15 * 60000),
     createdAt,
@@ -142,7 +151,7 @@ function ledgerPairFor(payment: Payment, at: string, reverse = false): LedgerEnt
     id: id('led'),
     transferId,
     accountId: 'acct_merchant_btc',
-    accountLabel: 'Merchant BTC',
+    accountKind: 'MERCHANT_BALANCE',
     direction: reverse ? 'DEBIT' : 'CREDIT',
     amount: payment.cryptoAmount,
     currency: payment.cryptoCurrency,
@@ -154,25 +163,40 @@ function ledgerPairFor(payment: Payment, at: string, reverse = false): LedgerEnt
     ...merchantSide,
     id: id('led'),
     accountId: 'acct_gateway_clearing',
-    accountLabel: 'Gateway clearing',
+    accountKind: 'GATEWAY_WALLET',
     direction: reverse ? 'CREDIT' : 'DEBIT',
   };
   return [merchantSide, clearingSide];
 }
 
-function webhookFor(payment: Payment, event: string, at: string): WebhookDelivery {
+function webhookFor(
+  payment: Payment,
+  eventType: string,
+  at: string,
+): WebhookDeliveryDetail {
   return {
     id: id('whd'),
     paymentId: payment.id,
-    event,
-    url: WEBHOOK_URL,
+    endpointId: ENDPOINT_ID,
+    mode: payment.mode,
+    eventType,
     status: 'DELIVERED',
     attempts: 1,
-    responseCode: 200,
-    signature: `t=${Math.floor(new Date(at).getTime() / 1000)},v1=${hex(64)}`,
+    maxAttempts: MAX_ATTEMPTS,
+    lastResponseStatus: 200,
+    deliveredAt: at,
+    attemptLog: [
+      {
+        attempt: 1,
+        responseStatus: 200,
+        error: null,
+        durationMs: 120 + Math.floor(rand() * 300),
+        createdAt: at,
+      },
+    ],
     payload: {
       id: payment.id,
-      type: event,
+      type: eventType,
       created: at,
       data: {
         amount: payment.fiatAmount,
@@ -182,7 +206,7 @@ function webhookFor(payment: Payment, event: string, at: string): WebhookDeliver
         status: payment.status,
       },
     },
-    nextRetryAt: null,
+    nextAttemptAt: null,
     createdAt: at,
   };
 }
@@ -221,10 +245,10 @@ function buildSeed(): MockState {
   plan.push({ status: 'PENDING', age: 2, mode: 'TEST' });
   plan.push({ status: 'PENDING', age: 11, mode: 'LIVE' });
 
-  const payments = plan.map((p, i) => seedPayment(i, p.status, p.mode, p.age));
-  const chainTxs: ChainTx[] = [];
+  const payments = plan.map((p) => seedPayment(p.status, p.mode, p.age));
+  const chainTxs: StoredChainTx[] = [];
   const ledger: LedgerEntry[] = [];
-  const webhooks: WebhookDelivery[] = [];
+  const webhooks: WebhookDeliveryDetail[] = [];
 
   for (const payment of payments) {
     const settledAt = iso(new Date(payment.createdAt).getTime() - Date.now() + 4 * 60000);
@@ -272,8 +296,9 @@ function buildSeed(): MockState {
       id: id('whd'),
       status: 'FAILED',
       attempts: 4,
-      responseCode: 502,
-      nextRetryAt: iso(8 * 60000),
+      lastResponseStatus: 502,
+      deliveredAt: null,
+      nextAttemptAt: iso(8 * 60000),
     });
   }
 
@@ -336,8 +361,10 @@ export function projectBalance(mode: KeyMode, currency: string): string {
 }
 
 let endpointState: WebhookEndpoint = {
-  id: 'whe_default',
+  id: ENDPOINT_ID,
+  mode: 'TEST',
   url: WEBHOOK_URL,
+  disabledAt: null,
   secretPrefix: 'whsec_4c81f0',
   events: ['payment.completed', 'payment.underpaid', 'payment.expired', 'payment.reversed'],
   createdAt: iso(-40 * 24 * 60 * 60000),
@@ -370,9 +397,12 @@ export const mock = {
   webhooks: (mode: KeyMode) => {
     const inMode = new Set(db().payments.filter((p) => p.mode === mode).map((p) => p.id));
     return db()
-      .webhooks.filter((w) => inMode.has(w.paymentId))
+      .webhooks.filter((w) => w.paymentId !== null && inMode.has(w.paymentId))
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   },
+
+  webhook: (deliveryId: string) =>
+    db().webhooks.find((w) => w.id === deliveryId) ?? null,
 
   webhooksFor: (paymentId: string) =>
     db()
@@ -382,7 +412,14 @@ export const mock = {
   apiKeys: () => db().apiKeys.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
 
   accounts: (mode: KeyMode): Account[] => [
-    { id: 'acct_merchant_btc', currency: 'BTC', mode, balance: projectBalance(mode, 'BTC') },
+    {
+      id: 'acct_merchant_btc',
+      kind: 'MERCHANT_BALANCE',
+      currency: 'BTC',
+      mode,
+      balance: projectBalance(mode, 'BTC'),
+      updatedAt: new Date().toISOString(),
+    },
   ],
 
   createPayment: (input: {
@@ -394,7 +431,6 @@ export const mock = {
     const now = new Date().toISOString();
     const payment: Payment = {
       id: id('pay'),
-      merchantId: MERCHANT.id,
       mode: input.mode,
       reference: input.reference,
       fiatAmount: input.fiatAmount,
@@ -403,7 +439,6 @@ export const mock = {
       cryptoCurrency: 'BTC',
       quotedRate: RATE_GEL_PER_BTC,
       address: btcAddress(),
-      derivationIndex: 2000 + db().payments.length,
       status: 'PENDING',
       expiresAt: iso(15 * 60000),
       createdAt: now,
@@ -422,7 +457,7 @@ export const mock = {
     payment.status = 'CONFIRMING';
     payment.updatedAt = new Date().toISOString();
 
-    const tx: ChainTx = {
+    const tx: StoredChainTx = {
       id: id('ctx'),
       paymentId: payment.id,
       txid: hex(64),
@@ -492,8 +527,9 @@ export const mock = {
     if (!delivery) return;
     delivery.attempts += 1;
     delivery.status = 'DELIVERED';
-    delivery.responseCode = 200;
-    delivery.nextRetryAt = null;
+    delivery.lastResponseStatus = 200;
+    delivery.deliveredAt = new Date().toISOString();
+    delivery.nextAttemptAt = null;
   },
 
   // Phase 6 reads existing data only and adds nothing to it. These read like
@@ -549,7 +585,7 @@ export const mock = {
       // A retry of the same request with the same body. The unique constraint on
       // (merchant, key) caught it and the stored response was replayed instead
       // of a second payment being created
-      if (payment.derivationIndex % 4 === 0) {
+      if (payment.id.charCodeAt(payment.id.length - 1) % 4 === 0) {
         out.push({
           id: `${payment.id}-replay`,
           kind: 'idempotency_replay',
@@ -616,14 +652,14 @@ export const mock = {
         id: `${delivery.id}-hook`,
         kind: 'webhook',
         service: 'worker',
-        title: `Webhook ${delivery.event}`,
+        title: `Webhook ${delivery.eventType}`,
         detail:
           delivery.status === 'DELIVERED'
-            ? `Delivered on attempt ${delivery.attempts}, HTTP ${delivery.responseCode}`
-            : `Attempt ${delivery.attempts} failed with HTTP ${delivery.responseCode}, backing off`,
+            ? `Delivered on attempt ${delivery.attempts}, HTTP ${delivery.lastResponseStatus}`
+            : `Attempt ${delivery.attempts} failed with HTTP ${delivery.lastResponseStatus}, backing off`,
         paymentId: delivery.paymentId,
         at: delivery.createdAt,
-        meta: { url: delivery.url, attempts: delivery.attempts },
+        meta: { endpointId: delivery.endpointId, attempts: delivery.attempts },
       });
     }
 

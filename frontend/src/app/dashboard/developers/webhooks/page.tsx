@@ -9,8 +9,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
 import { Field, Input } from '@/components/ui/field';
 import { WebhookBadge } from '@/components/ui/status-badge';
-import { JsonBlock } from '@/components/ui/json-block';
-import { CopyButton } from '@/components/ui/copy-button';
+import { DeliveryPayload } from '@/components/webhooks/delivery-payload';
 import { Skeleton, TableSkeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
@@ -136,14 +135,14 @@ export default function WebhooksPage() {
                         />
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="mono text-sm text-ink">{delivery.event}</span>
+                            <span className="mono text-sm text-ink">{delivery.eventType}</span>
                             <WebhookBadge status={delivery.status} />
                             {delivery.attempts > 1 && (
                               <span className="text-xs text-ink-faint">{delivery.attempts} attempts</span>
                             )}
                           </div>
                           <p className="mt-0.5 truncate text-xs text-ink-subtle">
-                            HTTP {delivery.responseCode ?? '—'} · {formatRelative(delivery.createdAt)}
+                            HTTP {delivery.lastResponseStatus ?? '—'} · {formatRelative(delivery.createdAt)}
                           </p>
                         </div>
                       </button>
@@ -163,28 +162,27 @@ export default function WebhooksPage() {
 
                     {open && (
                       <div className="space-y-3 border-t border-line bg-surface-muted px-4 py-4 sm:px-5">
-                        <div>
-                          <p className="mb-1 text-xs font-medium text-ink-subtle">Signature header</p>
-                          <div className="flex items-start gap-2">
-                            <code className="mono min-w-0 flex-1 break-all text-xs text-ink">
-                              {delivery.signature}
-                            </code>
-                            <CopyButton value={delivery.signature} label="" />
-                          </div>
-                        </div>
-
                         <div className="flex flex-wrap gap-4 text-xs text-ink-subtle">
                           <span>Sent {formatDateTime(delivery.createdAt)}</span>
-                          {delivery.nextRetryAt && <span>Next retry {formatDateTime(delivery.nextRetryAt)}</span>}
-                          <Link
-                            href={`/dashboard/payments/${delivery.paymentId}`}
-                            className="text-accent hover:underline"
-                          >
-                            {truncateMiddle(delivery.paymentId, 12, 6)}
-                          </Link>
+                          <span>
+                            {delivery.attempts} of {delivery.maxAttempts} attempts
+                          </span>
+                          {delivery.nextAttemptAt && (
+                            <span>Next retry {formatDateTime(delivery.nextAttemptAt)}</span>
+                          )}
+                          {delivery.paymentId && (
+                            <Link
+                              href={`/dashboard/payments/${delivery.paymentId}`}
+                              className="text-accent hover:underline"
+                            >
+                              {truncateMiddle(delivery.paymentId, 12, 6)}
+                            </Link>
+                          )}
                         </div>
 
-                        <JsonBlock value={delivery.payload} title="Payload" />
+                        {/* The payload is only on the detail response, because
+                            it is the one field that can be large */}
+                        <DeliveryPayload deliveryId={delivery.id} />
                       </div>
                     )}
                   </li>

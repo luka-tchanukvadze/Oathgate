@@ -6,7 +6,15 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { formatCrypto, sumMinor } from '@/lib/format/money';
 import { formatDateTime } from '@/lib/format/date';
 import { truncateMiddle, cn } from '@/lib/utils';
-import type { LedgerEntry } from '@/types';
+import type { AccountKind, LedgerEntry } from '@/types';
+
+// The API sends the account id and its kind, because a uuid on its own tells
+// a reader nothing
+const ACCOUNT_LABEL: Record<AccountKind, string> = {
+  MERCHANT_BALANCE: 'Merchant balance',
+  GATEWAY_WALLET: 'Gateway wallet',
+  FEES: 'Fees',
+};
 
 // This is the screen the whole project exists to show. Anyone can render a
 // status badge. Showing both halves of every movement, that they cancel to
@@ -85,7 +93,9 @@ export function LedgerTable({ entries, loading }: { entries: LedgerEntry[]; load
                   </span>
 
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm text-ink">{entry.accountLabel}</p>
+                    <p className="truncate text-sm text-ink">
+                      {ACCOUNT_LABEL[entry.accountKind]} {entry.currency}
+                    </p>
                     <p className="text-xs text-ink-subtle">
                       {entry.direction === 'CREDIT' ? 'Credit' : 'Debit'}
                       {entry.reversesId ? ` · reverses ${truncateMiddle(entry.reversesId, 8, 4)}` : ''}

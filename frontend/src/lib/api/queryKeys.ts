@@ -10,6 +10,7 @@ export const queryKeys = {
   accounts: (mode: KeyMode) => ['accounts', mode] as const,
   apiKeys: () => ['api-keys'] as const,
   webhooks: (mode: KeyMode) => ['webhooks', mode] as const,
+  webhook: (deliveryId: string) => ['webhook', deliveryId] as const,
   insights: (mode: KeyMode) => ['insights', mode] as const,
   merchant: () => ['merchant'] as const,
 };

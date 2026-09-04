@@ -248,14 +248,17 @@ export default function PaymentDetailPage({ params }: { params: Promise<{ id: st
                 {webhooks.map((delivery) => (
                   <li key={delivery.id} className="px-4 py-3.5 sm:px-5">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="mono text-sm text-ink">{delivery.event}</span>
+                      <span className="mono text-sm text-ink">{delivery.eventType}</span>
                       <WebhookBadge status={delivery.status} />
                       <span className="ml-auto text-xs text-ink-subtle">
                         {formatRelative(delivery.createdAt)}
                       </span>
                     </div>
-                    <p className="mono mt-1.5 break-all text-xs text-ink-subtle">
-                      {delivery.signature}
+                    <p className="mt-1.5 text-xs text-ink-subtle">
+                      {delivery.attempts} of {delivery.maxAttempts} attempts
+                      {delivery.lastResponseStatus
+                        ? ` · last answer HTTP ${delivery.lastResponseStatus}`
+                        : ' · nothing answered'}
                     </p>
                   </li>
                 ))}
@@ -283,9 +286,6 @@ export default function PaymentDetailPage({ params }: { params: Promise<{ id: st
               <Detail label="Address">
                 <span className="mono break-all text-xs">{payment.address}</span>
                 <CopyButton value={payment.address} label="" className="-ml-1 mt-1" />
-              </Detail>
-              <Detail label="Derivation index">
-                <span className="mono">{payment.derivationIndex}</span>
               </Detail>
               <Detail label="Reference">{payment.reference ?? '—'}</Detail>
               <Detail label="Expires">{formatDateTime(payment.expiresAt)}</Detail>

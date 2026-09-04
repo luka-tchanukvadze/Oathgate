@@ -59,12 +59,12 @@ export function buildTimeline(
 
   for (const delivery of webhooks) {
     items.push({
-      label: `Webhook ${delivery.event}`,
+      label: `Webhook ${delivery.eventType}`,
       at: delivery.createdAt,
       detail:
         delivery.status === 'DELIVERED'
-          ? `Delivered, HTTP ${delivery.responseCode}`
-          : `Attempt ${delivery.attempts} failed with HTTP ${delivery.responseCode}`,
+          ? `Delivered, HTTP ${delivery.lastResponseStatus}`
+          : `Attempt ${delivery.attempts} failed with HTTP ${delivery.lastResponseStatus}`,
       tone: delivery.status === 'DELIVERED' ? 'good' : 'bad',
     });
   }
