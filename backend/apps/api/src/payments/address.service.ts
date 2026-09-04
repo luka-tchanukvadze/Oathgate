@@ -54,8 +54,8 @@ export class AddressService {
     // A live payment against an unset live xpub has to stop here
     // Deriving a testnet address for real money sends it somewhere it can
     // never arrive, and nothing bounces it back
-    // An http error and not a plain one, or the dashboard create button gets
-    // back a 500 with nothing in it saying which mode is unconfigured
+    // An http error and not a plain one
+    // A plain Error is a 500 with nothing in it naming the mode that is unset
     if (!account) {
       throw new ServiceUnavailableException(
         `${mode.toLowerCase()} mode is not enabled on this deployment`,
