@@ -9,7 +9,7 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import type { AuthenticatedSession } from './auth.types';
 import { CurrentSession } from './decorators/current-session.decorator';
@@ -25,11 +25,10 @@ import {
 export class DashboardAuthController {
   constructor(private readonly sessions: SessionService) {}
 
-  // Five a minute per address
+  // Five a minute per address, against the sixty everything else gets
   // Argon2 makes one guess slow, this stops someone paying that in parallel
   @Post('login')
   @HttpCode(200)
-  @UseGuards(ThrottlerGuard)
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   async login(
     @Body() dto: LoginDto,

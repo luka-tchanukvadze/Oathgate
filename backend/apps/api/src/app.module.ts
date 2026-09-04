@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -15,6 +15,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    // Sixty a minute per address, and the login route asks for far less
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
     PrismaModule,
     QueueModule,
@@ -25,6 +26,13 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     WebhooksModule,
   ],
   controllers: [AppController],
-  providers: [AppService, { provide: APP_GUARD, useClass: OriginGuard }],
+  providers: [
+    AppService,
+    // Counted before anything else runs, so a flood is cheap to refuse
+    // Registering the module alone does nothing: without this the limit only
+    // applies where a route names the guard itself
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: OriginGuard },
+  ],
 })
 export class AppModule {}
