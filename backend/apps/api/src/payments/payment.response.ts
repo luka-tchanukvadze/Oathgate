@@ -16,5 +16,6 @@ export function toPaymentResponse(payment: Payment) {
     address: payment.address,
     expiresAt: payment.expiresAt.toISOString(),
     createdAt: payment.createdAt.toISOString(),
+    updatedAt: payment.updatedAt.toISOString(),
   };
 }

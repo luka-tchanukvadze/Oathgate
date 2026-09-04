@@ -2,10 +2,10 @@ import { Injectable } from '@nestjs/common';
 import {
   type Account,
   type KeyMode,
-  type LedgerEntry,
   type Page,
   PrismaService,
 } from '@app/shared';
+import { type LedgerEntryWithAccount } from './ledger.types';
 import { DEFAULT_LIMIT, ListEntriesDto } from './dto/list-entries.dto';
 
 @Injectable()
@@ -24,7 +24,7 @@ export class LedgerQueryService {
   async entries(
     merchantId: string,
     query: ListEntriesDto,
-  ): Promise<Page<LedgerEntry>> {
+  ): Promise<Page<LedgerEntryWithAccount>> {
     const limit = query.limit ?? DEFAULT_LIMIT;
 
     // An entry has no merchant of its own, it has an account
@@ -37,6 +37,7 @@ export class LedgerQueryService {
       },
       orderBy: { id: 'desc' },
       take: limit + 1,
+      include: { account: { select: { kind: true } } },
     });
 
     return { data: rows.slice(0, limit), hasMore: rows.length > limit };

@@ -1,8 +1,16 @@
-import { type WebhookAttempt, type WebhookDelivery } from '@app/shared';
+import { type WebhookAttempt } from '@app/shared';
+import { type DeliveryDetail, type DeliveryWithEvent } from './delivery.types';
 
-export function toDeliveryResponse(delivery: WebhookDelivery) {
+const PAYMENT_AGGREGATE = 'payment';
+
+export function toDeliveryResponse(delivery: DeliveryWithEvent) {
+  const { aggregateType, aggregateId } = delivery.outboxEvent;
+
   return {
     id: delivery.id,
+    // Null on anything that is not a payment event, and there is nothing else
+    // yet, so this is the shape rather than a real branch
+    paymentId: aggregateType === PAYMENT_AGGREGATE ? aggregateId : null,
     endpointId: delivery.endpointId,
     mode: delivery.mode,
     eventType: delivery.eventType,
@@ -28,9 +36,7 @@ export function toAttemptResponse(attempt: WebhookAttempt) {
 
 // Here and not in the list, because it is the one field that can be large
 // It is also the exact body I signed, which is the point of this view
-export function toDeliveryDetailResponse(
-  delivery: WebhookDelivery & { webhookAttempts: WebhookAttempt[] },
-) {
+export function toDeliveryDetailResponse(delivery: DeliveryDetail) {
   return {
     ...toDeliveryResponse(delivery),
     payload: delivery.payload,

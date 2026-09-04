@@ -2,12 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   type ChainTx,
   type KeyMode,
-  type LedgerEntry,
   type Payment,
   Prisma,
   PrismaService,
-  type WebhookDelivery,
 } from '@app/shared';
+import { type LedgerEntryWithAccount } from '../ledger/ledger.types';
+import { type DeliveryWithEvent } from '../webhooks/log/delivery.types';
 
 // What settlement writes on the outbox row
 // The only way back from a delivery to the payment that caused it
@@ -16,8 +16,8 @@ const PAYMENT_AGGREGATE = 'payment';
 export interface PaymentDetail {
   payment: Payment;
   chainTxs: ChainTx[];
-  ledger: LedgerEntry[];
-  webhooks: WebhookDelivery[];
+  ledger: LedgerEntryWithAccount[];
+  webhooks: DeliveryWithEvent[];
 }
 
 @Injectable()
@@ -39,7 +39,10 @@ export class PaymentDetailService {
           where: { id, merchantId, mode },
           include: {
             chainTxs: { orderBy: { seenAt: 'asc' } },
-            ledgerEntries: { orderBy: { createdAt: 'asc' } },
+            ledgerEntries: {
+              orderBy: { createdAt: 'asc' },
+              include: { account: { select: { kind: true } } },
+            },
           },
         });
 
@@ -59,6 +62,11 @@ export class PaymentDetailService {
             },
           },
           orderBy: { createdAt: 'asc' },
+          include: {
+            outboxEvent: {
+              select: { aggregateType: true, aggregateId: true },
+            },
+          },
         });
 
         const { chainTxs, ledgerEntries, ...rest } = payment;

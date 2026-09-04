@@ -11,15 +11,10 @@ import {
   type Page,
   PrismaService,
   WEBHOOK_QUEUE,
-  type WebhookAttempt,
-  type WebhookDelivery,
   WebhookDeliveryStatus,
 } from '@app/shared';
+import { type DeliveryDetail, type DeliveryWithEvent } from './delivery.types';
 import { DEFAULT_LIMIT, ListDeliveriesDto } from './dto/list-deliveries.dto';
-
-type DeliveryWithAttempts = WebhookDelivery & {
-  webhookAttempts: WebhookAttempt[];
-};
 
 @Injectable()
 export class DeliveriesService {
@@ -31,7 +26,7 @@ export class DeliveriesService {
   async list(
     merchantId: string,
     query: ListDeliveriesDto,
-  ): Promise<Page<WebhookDelivery>> {
+  ): Promise<Page<DeliveryWithEvent>> {
     const limit = query.limit ?? DEFAULT_LIMIT;
 
     const rows = await this.prisma.webhookDelivery.findMany({
@@ -47,6 +42,9 @@ export class DeliveriesService {
       // One row more than asked for
       // If it comes back there is another page, and no COUNT was needed
       take: limit + 1,
+      include: {
+        outboxEvent: { select: { aggregateType: true, aggregateId: true } },
+      },
     });
 
     return { data: rows.slice(0, limit), hasMore: rows.length > limit };
@@ -54,10 +52,13 @@ export class DeliveriesService {
 
   // No mode filter
   // The id is already scoped to the merchant, and the row states its mode
-  async get(merchantId: string, id: string): Promise<DeliveryWithAttempts> {
+  async get(merchantId: string, id: string): Promise<DeliveryDetail> {
     const delivery = await this.prisma.webhookDelivery.findFirst({
       where: { id, merchantId },
-      include: { webhookAttempts: { orderBy: { attempt: 'asc' } } },
+      include: {
+        webhookAttempts: { orderBy: { attempt: 'asc' } },
+        outboxEvent: { select: { aggregateType: true, aggregateId: true } },
+      },
     });
 
     if (!delivery) {
@@ -69,7 +70,7 @@ export class DeliveriesService {
 
   // Allowed even on a delivery that already succeeded
   // Send me that one again is a normal thing to want while wiring up
-  async replay(merchantId: string, id: string): Promise<WebhookDelivery> {
+  async replay(merchantId: string, id: string): Promise<DeliveryWithEvent> {
     const delivery = await this.prisma.webhookDelivery.findFirst({
       where: { id, merchantId },
       include: { endpoint: { select: { disabledAt: true } } },
@@ -92,6 +93,9 @@ export class DeliveriesService {
         // attempts keeps climbing so the log stays one unbroken 1, 2, 3
         // Resetting it would collide with the attempt rows already there
         maxAttempts: { increment: MAX_ATTEMPTS },
+      },
+      include: {
+        outboxEvent: { select: { aggregateType: true, aggregateId: true } },
       },
     });
 
