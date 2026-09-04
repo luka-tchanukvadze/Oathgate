@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import type { AuthenticatedMerchant } from '../auth/auth.types';
 import { KeyMode, type Page, type Payment, PrismaService } from '@app/shared';
 import { QuoteService } from '../rates/quote.service';
 import { AddressService } from './address.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { DEFAULT_LIMIT, ListPaymentsDto } from './dto/list-payments.dto';
+import type { PaymentAuthor } from './payments.types';
 
 // Named here rather than built from the mode
 // The value reaching raw SQL can then only be one of these two strings
@@ -21,25 +21,22 @@ export class PaymentsService {
     private readonly addresses: AddressService,
   ) {}
 
-  async create(
-    merchant: AuthenticatedMerchant,
-    dto: CreatePaymentDto,
-  ): Promise<Payment> {
+  async create(author: PaymentAuthor, dto: CreatePaymentDto): Promise<Payment> {
     const quote = await this.quotes.quote(
       BigInt(dto.fiatAmount),
       dto.fiatCurrency,
       dto.cryptoCurrency,
     );
 
-    const derivationIndex = await this.nextDerivationIndex(merchant.mode);
+    const derivationIndex = await this.nextDerivationIndex(author.mode);
 
     return this.prisma.payment.create({
       data: {
-        merchantId: merchant.merchantId,
-        apiKeyId: merchant.apiKeyId,
-        // Copied off the key
-        // Nothing the caller sends can change which world this payment is in
-        mode: merchant.mode,
+        merchantId: author.merchantId,
+        apiKeyId: author.apiKeyId,
+        // Frozen at creation, never joined back to the key
+        // Revoking a key must not take its payments' mode with it
+        mode: author.mode,
         reference: dto.reference,
         // Strings, not numbers, all the way into the Decimal columns
         fiatAmount: quote.fiatAmount.toString(),
@@ -47,7 +44,7 @@ export class PaymentsService {
         cryptoAmount: quote.cryptoAmount.toString(),
         cryptoCurrency: quote.cryptoCurrency,
         quotedRate: quote.rate,
-        address: this.addresses.derive(merchant.mode, derivationIndex),
+        address: this.addresses.derive(author.mode, derivationIndex),
         derivationIndex,
         expiresAt: quote.expiresAt,
       },

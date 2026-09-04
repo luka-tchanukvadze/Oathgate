@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ripemd160 } from '@noble/hashes/legacy.js';
 import { sha256 } from '@noble/hashes/sha2.js';
@@ -54,8 +54,12 @@ export class AddressService {
     // A live payment against an unset live xpub has to stop here
     // Deriving a testnet address for real money sends it somewhere it can
     // never arrive, and nothing bounces it back
+    // An http error and not a plain one, or the dashboard create button gets
+    // back a 500 with nothing in it saying which mode is unconfigured
     if (!account) {
-      throw new Error(`${ENV_KEY[mode]} is not set, cannot derive an address`);
+      throw new ServiceUnavailableException(
+        `${mode.toLowerCase()} mode is not enabled on this deployment`,
+      );
     }
 
     const child = account.deriveChild(RECEIVE_CHAIN).deriveChild(index);

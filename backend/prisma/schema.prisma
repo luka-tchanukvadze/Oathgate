@@ -74,7 +74,7 @@ model Payment {
   merchantId String   @db.Uuid
   merchant   Merchant @relation(fields: [merchantId], references: [id])
 
-  // Null when the dashboard created it with a JWT instead of a key
+  // Null when the dashboard created it with a session cookie, not a key
   apiKeyId String? @db.Uuid
   apiKey   ApiKey? @relation(fields: [apiKeyId], references: [id])
 
