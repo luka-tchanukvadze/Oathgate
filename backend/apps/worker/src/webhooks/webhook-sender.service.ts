@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
+  assertPublicHost,
   BACKOFF_SECONDS,
   DELIVERY_HEADER,
   EVENT_HEADER,
@@ -85,6 +86,12 @@ export class WebhookSenderService {
     const startedAt = Date.now();
 
     try {
+      // Checked here and not only at registration, because a name can be
+      // repointed at a private address after the url was accepted
+      // A refusal lands in the catch below and is recorded like any other
+      // failed attempt, so the delivery retries and then dead letters
+      await assertPublicHost(new URL(url).hostname);
+
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'content-type': 'application/json', ...headers },

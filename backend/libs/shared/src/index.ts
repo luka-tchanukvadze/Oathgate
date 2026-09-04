@@ -18,5 +18,6 @@ export * from './queue/redis-connection';
 export * from './settlement/settlement.module';
 export * from './settlement/settlement.service';
 export * from './webhooks/enqueue';
+export * from './webhooks/private-address';
 export * from './webhooks/secret-cipher';
 export * from './webhooks/webhook.constants';
