@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Menu, Search, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { SidebarNav } from './sidebar';
+import { BottomNav } from './bottom-nav';
 import { Logo } from './logo';
 import { AccountMenu } from './account-menu';
 import { getMerchant } from '@/lib/api/merchant';
@@ -14,6 +15,7 @@ import { ModeToggle } from '@/components/ui/mode-toggle';
 import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useMode } from '@/hooks/use-mode';
+import { cn } from '@/lib/utils';
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { mode } = useMode();
@@ -26,8 +28,17 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [liveInfo, setLiveInfo] = useState(false);
   const [term, setTerm] = useState('');
   const router = useRouter();
+  const [scrolled, setScrolled] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 4);
+
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const closeNav = useCallback(() => {
     setNavOpen(false);
@@ -83,7 +94,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-dvh">
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:bg-accent focus:px-3 focus:py-2 focus:text-sm focus:text-on-accent"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-full focus:bg-accent focus:px-3 focus:py-2 focus:text-sm focus:text-on-accent"
       >
         Skip to content
       </a>
@@ -100,31 +111,42 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </span>
       </div>
 
-      <div className="flex">
-        <aside className="sticky top-7 hidden h-[calc(100dvh-1.75rem)] w-60 shrink-0 border-r border-line bg-surface lg:block xl:w-72">
+      <div className="mx-auto flex w-full max-w-[1600px]">
+        <aside className="sticky top-7 hidden h-[calc(100dvh-1.75rem)] w-64 shrink-0 bg-canvas lg:block xl:w-72">
           <SidebarNav />
         </aside>
 
         <div className="min-w-0 flex-1">
-          <header className="sticky top-7 z-20 border-b border-line bg-surface/85 backdrop-blur">
-            <div className="mx-auto flex h-14 max-w-[1480px] items-center gap-2 px-3 sm:gap-3 sm:px-6 lg:px-8">
+          <header className="sticky top-7 z-20">
+            {/* The sheet is its own element and reaches 28px below the row, so
+                the fade lands on empty canvas rather than on the controls */}
+            <div
+              aria-hidden
+              className={cn(
+                'header-veil pointer-events-none absolute inset-x-0 -bottom-7 top-0 transition-[backdrop-filter,background-color] duration-200',
+                scrolled && 'header-veil-lifted',
+              )}
+            />
+
+            <div className="relative flex h-14 items-center gap-2 px-4 sm:gap-3 sm:px-6 lg:px-8">
               <button
+                ref={menuButtonRef}
                 type="button"
                 onClick={() => setNavOpen(true)}
                 aria-label="Open navigation"
-                className="grid size-9 shrink-0 place-items-center rounded-md text-ink-muted hover:bg-surface-muted lg:hidden"
+                className="grid size-10 shrink-0 place-items-center rounded-full text-ink-muted hover:bg-surface-muted lg:hidden"
               >
                 <Menu className="size-5" aria-hidden />
               </button>
 
               <div className="min-w-0 lg:hidden">
-                <Logo href="/dashboard" />
+                <Logo href="/dashboard" compact />
               </div>
 
               <form onSubmit={search} className="hidden min-w-0 flex-1 sm:block sm:max-w-md">
                 <div className="relative">
                   <Search
-                    className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-ink-faint"
+                    className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-ink-faint"
                     aria-hidden
                   />
                   <input
@@ -132,7 +154,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                     onChange={(e) => setTerm(e.target.value)}
                     placeholder="Search payments, references, addresses"
                     aria-label="Search"
-                    className="h-9 w-full rounded-md bg-surface-muted pl-8 pr-3 text-sm text-ink placeholder:text-ink-faint focus:bg-surface focus:shadow-card focus:outline-none sm:h-8"
+                    className="h-10 w-full rounded-full bg-surface-muted pl-10 pr-4 text-sm text-ink placeholder:text-ink-faint focus:bg-surface focus:shadow-card focus:outline-none"
                   />
                 </div>
               </form>
@@ -144,7 +166,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   type="button"
                   onClick={() => setSearchOpen(true)}
                   aria-label="Search"
-                  className="grid size-9 place-items-center rounded-md text-ink-muted hover:bg-surface-muted sm:hidden"
+                  className="grid size-10 place-items-center rounded-full text-ink-muted hover:bg-surface-muted sm:hidden"
                 >
                   <Search className="size-4" aria-hidden />
                 </button>
@@ -161,9 +183,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             </div>
           </header>
 
-          <main id="main" className="mx-auto w-full max-w-[1480px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">{children}</main>
+          {/* pb clears the phone tab bar. Without it the last row of a table
+              sits under the blur and cannot be read or tapped */}
+          <main id="main" className="w-full px-4 pb-28 pt-7 sm:px-6 sm:pt-9 lg:px-8 lg:pb-9">
+            {children}
+          </main>
         </div>
       </div>
+
+      <BottomNav />
 
       {/* Not rendered when closed, so its links cannot be reached by Tab while
           it is off screen */}
@@ -175,13 +203,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             role="dialog"
             aria-modal="true"
             aria-label="Navigation"
-            className="absolute inset-y-0 left-0 w-64 bg-surface"
+            className="absolute inset-y-0 left-0 w-72 bg-canvas"
           >
             <button
               type="button"
               onClick={closeNav}
               aria-label="Close navigation"
-              className="absolute right-2 top-2.5 z-10 grid size-9 place-items-center rounded-md text-ink-muted hover:bg-surface-muted"
+              className="absolute right-2 top-2.5 z-10 grid size-9 place-items-center rounded-full text-ink-muted hover:bg-surface-muted"
             >
               <X className="size-5" aria-hidden />
             </button>
@@ -197,7 +225,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             onChange={(e) => setTerm(e.target.value)}
             placeholder="Payment id, reference or address"
             aria-label="Search payments"
-            className="h-11 w-full rounded-md border border-line bg-surface px-3 text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
+            className="h-11 w-full rounded-well border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
           />
           <Button type="submit" className="mt-3 w-full">
             Search
@@ -232,7 +260,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <Link
               href="/dashboard/guide"
               onClick={() => setLiveInfo(false)}
-              className="shadow-card inline-flex h-11 items-center justify-center rounded-md bg-surface px-4 text-sm font-medium text-ink transition-colors hover:bg-surface-muted sm:h-8"
+              className="shadow-card inline-flex h-11 items-center justify-center rounded-full bg-surface px-4 text-sm font-medium text-ink transition-colors hover:bg-surface-muted sm:h-8"
             >
               Read the guide
             </Link>

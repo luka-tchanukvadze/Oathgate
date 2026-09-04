@@ -3,76 +3,99 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
-import { Activity, BookOpen, ChevronRight, Code2, Home, Sparkles, Wallet } from 'lucide-react';
+import {
+  Activity,
+  BookOpen,
+  ChevronDown,
+  Code2,
+  Home,
+  KeyRound,
+  ScrollText,
+  Sparkles,
+  Wallet,
+  Webhook,
+} from 'lucide-react';
 import { Logo } from './logo';
-import { listPayments, queryKeys } from '@/lib/api';
-import { useMode } from '@/hooks/use-mode';
+import { useOpenPaymentCount } from '@/hooks/use-open-payments';
 import { cn } from '@/lib/utils';
 
 const NAV = [
   { href: '/dashboard', label: 'Home', icon: Home, exact: true },
-  { href: '/dashboard/payments', label: 'Payments', icon: Activity, badge: 'open' as const },
+  {
+    href: '/dashboard/payments',
+    label: 'Payments',
+    icon: Activity,
+    badge: 'open' as const,
+  },
   { href: '/dashboard/balance', label: 'Balance', icon: Wallet },
   {
     href: '/dashboard/developers',
     label: 'Developers',
     icon: Code2,
     children: [
-      { href: '/dashboard/developers/keys', label: 'API keys' },
-      { href: '/dashboard/developers/webhooks', label: 'Webhooks' },
-      { href: '/dashboard/developers/events', label: 'Events' },
+      { href: '/dashboard/developers/keys', label: 'API keys', icon: KeyRound },
+      {
+        href: '/dashboard/developers/webhooks',
+        label: 'Webhooks',
+        icon: Webhook,
+      },
+      {
+        href: '/dashboard/developers/events',
+        label: 'Events',
+        icon: ScrollText,
+      },
     ],
   },
   { href: '/dashboard/insights', label: 'Insights', icon: Sparkles },
+  { href: '/dashboard/guide', label: 'Guide', icon: BookOpen },
 ];
 
-const GUIDE = { href: '/dashboard/guide', label: 'Guide', icon: BookOpen };
-
-// A left bar plus tinted text, rather than a grey fill that sat a shade away
-// from hover. Applied identically to children so a nested route is as obvious
-// as a top level one
+// One signal for "you are here", not three
+// A filled pill says it on its own, so the icon keeps its weight and its colour
+// and the row does not also grow a coloured bar
 function itemClass(active: boolean) {
   return cn(
-    'relative flex items-center gap-3 rounded-md py-2.5 pl-3 pr-2.5 text-sm transition-colors',
+    'flex items-center gap-3.5 rounded-full py-3.5 pl-4 pr-4 text-sm transition-colors',
     active
-      ? 'bg-accent-soft font-medium text-accent'
+      ? 'bg-surface-sunken font-medium text-ink'
       : 'text-ink-muted hover:bg-surface-muted hover:text-ink',
   );
 }
 
-function ActiveBar() {
-  // Inside the row. It used to sit outside, almost against the viewport edge
-  return <span className="absolute inset-y-1.5 left-0 w-[3px] rounded-r-full bg-accent" aria-hidden />;
+function itemIconClass(active: boolean) {
+  return cn('size-[18px] shrink-0', active ? 'text-ink' : 'text-ink-faint');
 }
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
-  const { mode } = useMode();
   const inDevelopers = pathname.startsWith('/dashboard/developers');
-  const [open, setOpen] = useState(inDevelopers);
+
+  // Open from the start
+  // The three things under here are the point of the product, and a collapsed
+  // group hides them behind a click nobody knows to make
+  const [open, setOpen] = useState(true);
 
   useEffect(() => {
     if (inDevelopers) setOpen(true);
   }, [inDevelopers]);
 
-  // Same query key as the payments screen, so this is a cache read rather than
-  // a second request. Only counts that need acting on get a badge
-  const payments = useQuery({ queryKey: queryKeys.payments(mode), queryFn: () => listPayments(mode) });
-  const openCount = (payments.data ?? []).filter(
-    (p) => p.status === 'PENDING' || p.status === 'CONFIRMING',
-  ).length;
+  const openCount = useOpenPaymentCount();
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex h-14 shrink-0 items-center border-b border-line px-4 xl:h-16">
+      {/* Centred in the rail rather than pinned to its left edge
+          Flush left it read as stranded in the corner, with 36px of margin on
+          one side of it and 160px of empty rail on the other */}
+      <div className="flex h-14 shrink-0 items-center justify-center px-5">
         <Logo href="/dashboard" />
       </div>
 
-      <nav aria-label="Sections" className="flex-1 overflow-y-auto p-3">
-        <div className="flex flex-col gap-0.5">
+      <nav aria-label="Sections" className="flex-1 overflow-y-auto px-5 pb-5 pt-10">
+        <div className="flex flex-col gap-1">
           {NAV.map((item) => {
-            const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
+            const active = item.exact
+              ? pathname === item.href
+              : pathname.startsWith(item.href);
             const Icon = item.icon;
 
             if (!item.children) {
@@ -84,13 +107,19 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                   aria-current={active ? 'page' : undefined}
                   className={itemClass(active)}
                 >
-                  {active && <ActiveBar />}
-                  <Icon className="size-[18px] shrink-0" strokeWidth={active ? 2.1 : 1.8} aria-hidden />
+                  <Icon
+                    className={itemIconClass(active)}
+                    strokeWidth={1.75}
+                    aria-hidden
+                  />
                   {item.label}
                   {item.badge === 'open' && openCount > 0 && (
                     <span
-                      className="num ml-auto rounded px-1.5 py-0.5 text-2xs font-semibold"
-                      style={{ backgroundColor: 'var(--warn-bg)', color: 'var(--warn-fg)' }}
+                      className="num ml-auto rounded-full px-2 py-0.5 text-2xs font-semibold"
+                      style={{
+                        backgroundColor: 'var(--warn-bg)',
+                        color: 'var(--warn-fg)',
+                      }}
                     >
                       {openCount}
                     </span>
@@ -100,26 +129,35 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             }
 
             return (
-              <div key={item.href}>
+              <div key={item.href} className="flex flex-col gap-1">
                 <button
                   type="button"
                   onClick={() => setOpen((value) => !value)}
                   aria-expanded={open}
                   className={cn(itemClass(active && !open), 'w-full')}
                 >
-                  {active && !open && <ActiveBar />}
-                  <Icon className="size-[18px] shrink-0" strokeWidth={active ? 2.1 : 1.8} aria-hidden />
+                  <Icon
+                    className={itemIconClass(active && !open)}
+                    strokeWidth={1.75}
+                    aria-hidden
+                  />
                   {item.label}
-                  <ChevronRight
-                    className={cn('ml-auto size-3 shrink-0 transition-transform', open && 'rotate-90')}
+                  <ChevronDown
+                    className={cn(
+                      'ml-auto size-4 shrink-0 text-ink-faint transition-transform',
+                      open && 'rotate-180',
+                    )}
                     aria-hidden
                   />
                 </button>
 
+                {/* Indented to sit under the parent's label, not under its icon,
+                    and with no rail, because the indent already says nested */}
                 {open && (
-                  <div className="ml-[1.05rem] mt-0.5 flex flex-col gap-0.5 border-l border-line pl-2.5">
+                  <div className="flex flex-col gap-1 pl-7">
                     {item.children.map((child) => {
                       const childActive = pathname.startsWith(child.href);
+                      const ChildIcon = child.icon;
                       return (
                         <Link
                           key={child.href}
@@ -128,7 +166,11 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                           aria-current={childActive ? 'page' : undefined}
                           className={itemClass(childActive)}
                         >
-                          {childActive && <ActiveBar />}
+                          <ChildIcon
+                            className={itemIconClass(childActive)}
+                            strokeWidth={1.75}
+                            aria-hidden
+                          />
                           {child.label}
                         </Link>
                       );
@@ -139,35 +181,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             );
           })}
         </div>
-
-        <div className="mt-4 border-t border-line pt-3">
-          <Link
-            href={GUIDE.href}
-            onClick={onNavigate}
-            aria-current={pathname.startsWith(GUIDE.href) ? 'page' : undefined}
-            className={itemClass(pathname.startsWith(GUIDE.href))}
-          >
-            {pathname.startsWith(GUIDE.href) && <ActiveBar />}
-            <GUIDE.icon className="size-[18px] shrink-0" strokeWidth={1.8} aria-hidden />
-            {GUIDE.label}
-          </Link>
-        </div>
       </nav>
-
-      {/* Which workspace you are in, which is the one thing the footer should
-          carry. The environment already has a banner across the top */}
-      <div className="flex h-16 shrink-0 items-center gap-3 border-t border-line px-3">
-        <span
-          aria-hidden
-          className="grid size-8 shrink-0 place-items-center rounded-lg bg-ink text-2xs font-semibold text-on-accent"
-        >
-          DC
-        </span>
-        <span className="min-w-0">
-          <span className="block truncate text-sm font-medium text-ink">Demo Coffee Co</span>
-          <span className="block text-xs text-ink-subtle">Testnet workspace</span>
-        </span>
-      </div>
     </div>
   );
 }
