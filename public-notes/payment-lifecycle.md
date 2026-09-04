@@ -102,8 +102,8 @@ statement about **cost**: how expensive it would be to undo this.
 
 One confirmation is already far more than a coffee is worth stealing. Six
 confirmations on a ten minute chain is an hour of a customer standing at a
-counter. The threshold is a business decision dressed up as a technical one,
-and this project sets it at one.
+counter. The threshold looks like a technical setting and is really a business
+choice, and this project sets it at one.
 
 The threshold lives in one constant that both the settler and the reversal
 detector import. They briefly did not, and one at 1 with the other at 2 means

@@ -1,8 +1,9 @@
 # Oathgate
 
 A crypto payment gateway. A shop charges in normal money, the customer pays in
-Bitcoin, and Oathgate sits in the middle. It quotes the rate, hands out an
-address, watches the blockchain, and keeps the books.
+Bitcoin, and Oathgate sits in the middle. It works out the price, gives the
+customer an address to pay, watches the blockchain, and records what the shop is
+owed.
 
 Backend-focused. Three NestJS **microservices** talking over a queue and an
 event channel, Postgres, Redis, an append-only double-entry ledger, and a
@@ -17,7 +18,7 @@ redeploys itself when I push.
 
 ---
 
-## What it does, in one order
+## What it does, from start to finish
 
 For example, a coffee shop wants 10.50 GEL for a coffee. The customer wants to
 pay in Bitcoin. On their own, those two things do not fit together.
@@ -136,9 +137,9 @@ Environment variables and the full walkthrough:
 | `worker` | a timer fires or a job is queued | watching the chain, settling, sending webhooks |
 | `notifications` | an event is published | its own database, emails |
 
-The split is on **what starts the work**, not on subject. An HTTP request has to
-be answered in milliseconds, and watching a blockchain takes seconds, so those
-two things cannot live in the same process.
+They are split by **what starts the work**, not by what the code is about. An
+HTTP request has to be answered in milliseconds and watching a blockchain takes
+seconds, so those two jobs cannot share a process.
 
 There are two databases. The api and the worker share the payments one, because
 they work on the same rows. Notifications has its own and only reacts to events,
@@ -146,7 +147,7 @@ so it cannot read a payment even by mistake.
 
 ---
 
-## The parts I would point at
+## The parts I am most proud of
 
 **A ledger that cannot lose money.** Every movement writes two rows that add up
 to zero. Rows are never updated and never deleted. The balance column is a cache
@@ -162,20 +163,21 @@ version of that test passed with the lock and without it, which is the more
 useful story. [testing.md](public-notes/testing.md)
 
 **No floats anywhere near money.** Amounts are whole numbers only. 10.50 GEL is
-stored as `1050`. Bitcoin is stored in satoshis. `0.1 + 0.2 !== 0.3` is a
-rounding artefact in a display and a real loss in a ledger.
+stored as `1050`, and Bitcoin is stored in satoshis. A computer cannot hold 0.1
+exactly, so `0.1 + 0.2` does not equal `0.3`. On a screen that is a harmless
+rounding error. In a ledger it is money that has gone missing.
 [money-and-ledger.md](public-notes/money-and-ledger.md)
 
-**A transactional outbox.** The event that says "this payment is paid" is
-written in the same transaction as the ledger rows. A relay publishes it
-afterwards. Without that, a crash in the gap leaves the shop paid and never
-told. [architecture.md](public-notes/architecture.md)
+**A transactional outbox.** The message that says "this payment is paid" is
+saved in the same database transaction as the money itself, then sent out
+afterwards. Otherwise a crash in between leaves the shop paid and never told.
+[architecture.md](public-notes/architecture.md)
 
 **The blockchain can change its mind.** Transactions get replaced, blocks get
-dropped, and a payment that was confirmed can stop being confirmed. Oathgate
-treats what the blockchain says as the complete current picture rather than as
-new items to add to a list, and a background check writes reversal rows when
-confirmed money disappears.
+dropped, and a payment that was confirmed can stop being confirmed. So Oathgate
+reads the blockchain as the full current picture every time, instead of adding
+whatever is new to a list it already has. When confirmed money disappears, a
+background check writes the rows that undo it.
 [payment-lifecycle.md](public-notes/payment-lifecycle.md)
 
 ---

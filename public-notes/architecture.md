@@ -15,7 +15,7 @@ The split is on **what starts the work**, not on subject matter.
 | `notifications` | an event on a channel | Knows nothing about payments, only about events it is told |
 
 A subject-matter split would have put "payments" in one service and "webhooks"
-in another. That reads well and works badly, because a single payment then
+in another. That sounds tidy and works badly, because a single payment then
 crosses a network boundary three times before anyone is paid.
 
 The rule that fell out of it: the api never schedules anything. NestJS's
