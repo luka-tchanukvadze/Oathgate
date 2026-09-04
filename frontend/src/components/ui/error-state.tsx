@@ -49,7 +49,7 @@ export function ErrorState({
 export function StaleBanner({ onRetry, retrying }: { onRetry: () => void; retrying?: boolean }) {
   return (
     <div
-      className="mb-4 flex flex-wrap items-center gap-3 rounded-lg px-3.5 py-2.5"
+      className="mb-4 flex flex-wrap items-center gap-3 rounded-well px-4 py-2.5"
       style={{ backgroundColor: 'var(--warn-bg)', color: 'var(--warn-fg)' }}
       role="status"
     >
@@ -61,7 +61,7 @@ export function StaleBanner({ onRetry, retrying }: { onRetry: () => void; retryi
         type="button"
         onClick={onRetry}
         disabled={retrying}
-        className="shrink-0 rounded px-2 py-1 text-xs font-semibold underline underline-offset-2 disabled:opacity-50"
+        className="shrink-0 rounded-full px-2 py-1 text-xs font-semibold underline underline-offset-2 disabled:opacity-50"
       >
         {retrying ? 'Retrying' : 'Retry'}
       </button>

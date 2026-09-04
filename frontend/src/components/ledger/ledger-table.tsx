@@ -70,7 +70,7 @@ export function LedgerTable({ entries, loading }: { entries: LedgerEntry[]; load
               <span className="ml-auto text-xs text-ink-subtle">{formatDateTime(group[0].createdAt)}</span>
             </div>
 
-            <div className="overflow-hidden rounded-md border border-line">
+            <div className="overflow-hidden rounded-well border border-line">
               {group.map((entry) => (
                 <div
                   key={entry.id}
@@ -78,7 +78,7 @@ export function LedgerTable({ entries, loading }: { entries: LedgerEntry[]; load
                 >
                   <span
                     className={cn(
-                      'grid size-6 shrink-0 place-items-center rounded-md',
+                      'grid size-6 shrink-0 place-items-center rounded-full',
                       entry.direction === 'CREDIT'
                         ? 'bg-[var(--ok-bg)] text-[var(--ok-fg)]'
                         : 'bg-[var(--neutral-bg)] text-[var(--neutral-fg)]',

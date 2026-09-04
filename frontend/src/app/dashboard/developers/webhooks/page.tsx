@@ -122,7 +122,7 @@ export default function WebhooksPage() {
                 const open = expanded === delivery.id;
                 return (
                   <li key={delivery.id}>
-                    <div className="flex flex-wrap items-center gap-3 px-4 py-3 sm:px-5">
+                    <div className="flex flex-wrap items-center gap-3 px-5 py-3.5 sm:px-6">
                       <button
                         type="button"
                         onClick={() => setExpanded(open ? null : delivery.id)}
@@ -222,13 +222,13 @@ export default function WebhooksPage() {
             <CardTitle>Signing secret</CardTitle>
           </CardHeader>
           <CardBody className="space-y-3">
-            <code className="mono block break-all rounded-md bg-surface-muted p-2.5 text-xs text-ink">
+            <code className="mono block break-all rounded-well bg-surface-muted p-3 text-xs text-ink">
               {endpoint.data?.secretPrefix}••••••••••••••••
             </code>
 
             <div>
               <p className="mb-1.5 text-xs font-medium text-ink">Verifying a delivery</p>
-              <pre className="scrollbar-thin overflow-x-auto rounded-md bg-surface-muted p-2.5 text-2xs leading-relaxed">
+              <pre className="scrollbar-thin overflow-x-auto rounded-well bg-surface-muted p-3 text-2xs leading-relaxed">
                 <code className="mono text-ink-muted">{VERIFY}</code>
               </pre>
               <p className="mt-2 text-xs text-ink-subtle">

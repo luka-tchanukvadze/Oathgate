@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Check, Plus } from 'lucide-react';
+import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
 import { Stat } from '@/components/ui/stat';
 import { Panel, PanelBody, PanelHeader, PanelTitle } from '@/components/ui/panel';
@@ -14,7 +15,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import type { VolumePoint } from '@/components/charts/volume-chart';
 import type { StatusSlice } from '@/components/charts/status-donut';
 import { CreatePaymentDialog } from '@/components/payments/create-payment-dialog';
-import { listPayments, listAccounts, queryKeys } from '@/lib/api';
+import { listPayments, listAccounts, getMerchant, queryKeys } from '@/lib/api';
 import { formatFiat, formatCrypto, sumMinor } from '@/lib/format/money';
 import { formatRelative } from '@/lib/format/date';
 import { useMode } from '@/hooks/use-mode';
@@ -70,6 +71,9 @@ export default function HomePage() {
 
   const payments = useQuery({ queryKey: queryKeys.payments(mode), queryFn: () => listPayments(mode) });
   const accounts = useQuery({ queryKey: queryKeys.accounts(mode), queryFn: () => listAccounts(mode) });
+  // Same key the shell uses, so this reads the cache instead of asking again
+  const merchant = useQuery({ queryKey: queryKeys.merchant(), queryFn: getMerchant });
+  const merchantName = merchant.data?.name ?? 'This workspace';
 
   const rows = useMemo(() => payments.data ?? [], [payments.data]);
   const loading = payments.isLoading;
@@ -171,24 +175,22 @@ export default function HomePage() {
 
   return (
     <>
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight text-ink">Home</h1>
-          <p className="mt-0.5 text-sm text-ink-subtle">
-            Demo Coffee Co, last 14 days
-          </p>
-        </div>
-        <Button onClick={() => setCreating(true)}>
-          <Plus className="size-3.5" aria-hidden />
-          Create payment
-        </Button>
-      </div>
+      <PageHeader
+        title="Home"
+        description={`${merchantName}, last 14 days`}
+        action={
+          <Button onClick={() => setCreating(true)}>
+            <Plus className="size-3.5" aria-hidden />
+            Create payment
+          </Button>
+        }
+      />
 
       {payments.isError && payments.data && (
         <StaleBanner onRetry={() => payments.refetch()} retrying={payments.isFetching} />
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-12">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-12">
         <Stat
           className="xl:col-span-3"
           label="Gross volume"
@@ -292,7 +294,7 @@ export default function HomePage() {
           ) : loading ? (
             <TableSkeleton rows={6} cols={4} />
           ) : recent.length === 0 ? (
-            <div className="px-5 py-12 text-center">
+            <div className="px-5 py-12 text-center sm:px-6">
               <p className="text-sm text-ink">No payments yet</p>
               <p className="mx-auto mt-1 max-w-sm text-sm text-ink-subtle">
                 Create one and simulate a customer paying it to watch the whole flow run.
@@ -307,7 +309,7 @@ export default function HomePage() {
                 <li key={payment.id}>
                   <Link
                     href={`/dashboard/payments/${payment.id}`}
-                    className="flex items-center gap-3 px-5 py-2.5 hover:bg-surface-muted"
+                    className="flex items-center gap-3 px-5 py-3 hover:bg-surface-muted sm:px-6"
                   >
                     <span className="num w-24 shrink-0 text-sm font-medium text-ink">
                       {formatFiat(payment.fiatAmount, payment.fiatCurrency)}
@@ -364,10 +366,10 @@ export default function HomePage() {
                   <li key={row.label}>
                     <Link
                       href={`/dashboard/payments?status=${row.status}`}
-                      className="flex items-start gap-3 rounded-md px-2 py-2 hover:bg-surface-muted"
+                      className="flex items-start gap-3 rounded-xl px-2.5 py-2 hover:bg-surface-muted"
                     >
                       <span
-                        className="num mt-px w-7 shrink-0 rounded px-1.5 py-0.5 text-center text-2xs font-semibold"
+                        className="num mt-px w-7 shrink-0 rounded-full px-1.5 py-0.5 text-center text-2xs font-semibold"
                         style={{ backgroundColor: row.bg, color: row.fg }}
                       >
                         {row.count}

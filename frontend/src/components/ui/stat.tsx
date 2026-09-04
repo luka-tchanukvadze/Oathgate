@@ -17,12 +17,12 @@ export function Stat({
   className?: string;
 }) {
   return (
-    <div className={cn('shadow-tile rounded-tile bg-surface px-4 py-3.5', className)}>
+    <div className={cn('shadow-tile rounded-tile bg-surface px-5 py-4', className)}>
       <div className="flex items-start justify-between gap-2">
         <p className="text-xs text-ink-subtle">{label}</p>
         {typeof delta === 'number' && !loading && (
           <span
-            className="num rounded px-1.5 py-0.5 text-2xs font-semibold"
+            className="num rounded-full px-2 py-0.5 text-2xs font-semibold"
             style={{
               backgroundColor: delta >= 0 ? 'var(--ok-bg)' : 'var(--bad-bg)',
               color: delta >= 0 ? 'var(--ok-fg)' : 'var(--bad-fg)',

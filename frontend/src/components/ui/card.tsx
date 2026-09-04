@@ -9,16 +9,16 @@ export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
 export function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn('flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3 sm:px-5', className)}
+      className={cn('flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4 sm:px-6', className)}
       {...props}
     />
   );
 }
 
 export function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
-  return <h2 className={cn('text-sm font-semibold text-ink', className)} {...props} />;
+  return <h2 className={cn('text-[15px] font-semibold tracking-tight text-ink', className)} {...props} />;
 }
 
 export function CardBody({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('px-4 py-4 sm:px-5', className)} {...props} />;
+  return <div className={cn('px-5 py-5 sm:px-6', className)} {...props} />;
 }

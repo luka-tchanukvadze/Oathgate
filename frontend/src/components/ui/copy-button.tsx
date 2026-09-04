@@ -27,7 +27,7 @@ export function CopyButton({ value, label, className }: { value: string; label?:
       onClick={copy}
       aria-label={label ?? 'Copy to clipboard'}
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-ink-subtle transition-colors hover:bg-surface-muted hover:text-ink',
+        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs text-ink-subtle transition-colors hover:bg-surface-muted hover:text-ink',
         className,
       )}
     >

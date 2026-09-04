@@ -78,7 +78,7 @@ export default function EventsPage() {
             onClick={() => setFilter(value)}
             aria-pressed={filter === value}
             className={cn(
-              'shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+              'shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
               filter === value ? 'bg-accent-soft text-accent' : 'text-ink-muted hover:bg-surface-muted hover:text-ink',
             )}
           >
@@ -107,7 +107,7 @@ export default function EventsPage() {
                     className="flex w-full items-start gap-3 px-4 py-2.5 text-left hover:bg-surface-muted sm:px-5"
                   >
                     <span
-                      className="mt-0.5 w-24 shrink-0 rounded px-1.5 py-0.5 text-center text-2xs font-semibold uppercase tracking-wide"
+                      className="mt-0.5 w-24 shrink-0 rounded-full px-2 py-0.5 text-center text-2xs font-semibold uppercase tracking-wide"
                       style={{
                         backgroundColor: `var(--${KIND_TONE[event.kind]}-bg)`,
                         color: `var(--${KIND_TONE[event.kind]}-fg)`,
@@ -128,7 +128,7 @@ export default function EventsPage() {
                   </button>
 
                   {expanded && (
-                    <div className="space-y-3 border-t border-line bg-surface-muted px-4 py-3.5 sm:px-5">
+                    <div className="space-y-3 border-t border-line bg-surface-muted px-5 py-4 sm:px-6">
                       <div className="flex flex-wrap gap-4 text-xs text-ink-subtle">
                         <span>{formatDateTime(event.at)}</span>
                         <span>service: {event.service}</span>

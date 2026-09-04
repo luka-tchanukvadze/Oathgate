@@ -107,7 +107,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
               </p>
             </div>
 
-            <div className="mt-5 rounded-md bg-surface-muted p-3">
+            <div className="mt-5 rounded-well bg-surface-muted p-3.5">
               <p className="mb-1 text-xs text-ink-subtle">To this address</p>
               <code className="mono block break-all text-xs text-ink">{payment.address}</code>
               <CopyButton value={payment.address} label="Copy address" className="-ml-2 mt-1.5" />

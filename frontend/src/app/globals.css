@@ -79,8 +79,13 @@
   --text-2xl: 1.875rem;
   --text-3xl: 2.5rem;
 
-  --radius-tile: 0.875rem;
-  --radius-card: 0.625rem;
+  /* Three radii and nothing else. Tile is any block that sits on the canvas,
+     well is any sunken thing inside one, and everything a finger presses is a
+     full pill. Four different corner sizes on one screen is what made this look
+     assembled rather than designed */
+  --radius-tile: 1rem;
+  --radius-card: 1rem;
+  --radius-well: 0.625rem;
 }
 
 @layer base {
@@ -159,6 +164,34 @@
       0 0 0 1px rgba(10, 37, 64, 0.05),
       0 1px 3px rgba(10, 37, 64, 0.04),
       0 6px 16px -8px rgba(10, 37, 64, 0.08);
+  }
+
+  /* The sheet the header sits on. It runs past the bottom of the header row
+     and the mask fades it out, so a line of text scrolling underneath goes
+     blurred, then dim, then sharp
+     A plain opaque bar ends on a straight edge and slices letters in half
+     mask-image hides part of an element by a gradient: black keeps the pixel,
+     transparent drops it, and it takes the backdrop blur with it */
+  .header-veil {
+    background-color: var(--canvas);
+    -webkit-mask-image: linear-gradient(to bottom, #000 68%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 68%, transparent 100%);
+  }
+
+  .header-veil-lifted {
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    background-color: color-mix(in srgb, var(--canvas) 78%, transparent);
+  }
+
+  /* The same sheet the other way up, for the phone tab bar
+     It always has content behind it, so the blur is always on */
+  .footer-veil {
+    background-color: color-mix(in srgb, var(--canvas) 82%, transparent);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    -webkit-mask-image: linear-gradient(to top, #000 76%, transparent 100%);
+    mask-image: linear-gradient(to top, #000 76%, transparent 100%);
   }
 
   .shadow-pop {

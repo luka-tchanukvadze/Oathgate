@@ -24,10 +24,10 @@ export function ModeToggle({
     <div
       role="group"
       aria-label="Environment"
-      className={cn('inline-flex items-center rounded-md bg-surface-muted p-0.5', className)}
+      className={cn('inline-flex h-10 items-center rounded-full bg-surface-muted p-1', className)}
     >
       <span
-        className="rounded px-3 py-1.5 text-xs font-semibold sm:px-2.5 sm:py-1"
+        className="inline-flex h-8 items-center rounded-full px-3 text-xs font-semibold"
         style={{ backgroundColor: 'var(--warn-bg)', color: 'var(--warn-fg)' }}
       >
         Testnet
@@ -38,7 +38,7 @@ export function ModeToggle({
         onClick={onLockedClick}
         aria-disabled="true"
         title="Mainnet is not activated"
-        className="inline-flex items-center gap-1 rounded px-3 py-1.5 text-xs font-semibold text-ink-faint hover:text-ink-subtle sm:px-2.5 sm:py-1"
+        className="inline-flex h-8 items-center gap-1 rounded-full px-3 text-xs font-semibold text-ink-faint hover:text-ink-subtle"
       >
         <Lock className="size-3" aria-hidden />
         Mainnet

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
-import { LogOut } from 'lucide-react';
+import { ChevronDown, LogOut } from 'lucide-react';
 import { logout } from '@/lib/api/auth';
 
 function initials(name: string): string {
@@ -62,15 +62,26 @@ export function AccountMenu({ name, email }: { name: string; email: string }) {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Account"
-        className="grid size-7 place-items-center rounded-full bg-ink text-2xs font-semibold text-on-accent"
+        className="flex items-center gap-2.5 rounded-full bg-surface-muted py-1.5 pl-1.5 pr-2.5 transition-colors hover:bg-surface-sunken"
       >
-        {initials(name)}
+        <span
+          aria-hidden
+          className="grid size-7 shrink-0 place-items-center rounded-full bg-ink text-2xs font-semibold text-on-accent"
+        >
+          {initials(name)}
+        </span>
+        {/* The name is the point of the pill, so it goes as soon as the header
+            starts to crowd rather than shrinking the tap target */}
+        <span className="hidden max-w-40 truncate text-sm font-medium text-ink md:block">
+          {name}
+        </span>
+        <ChevronDown className="hidden size-4 shrink-0 text-ink-faint md:block" aria-hidden />
       </button>
 
       {open && (
         <div
           role="menu"
-          className="shadow-card absolute right-0 top-9 z-40 w-56 rounded-md border border-line bg-surface p-1"
+          className="shadow-card absolute right-0 top-12 z-40 w-56 rounded-xl border border-line bg-surface p-1"
         >
           <div className="border-b border-line px-3 py-2">
             <p className="truncate text-xs font-medium text-ink">{name}</p>
@@ -81,7 +92,7 @@ export function AccountMenu({ name, email }: { name: string; email: string }) {
             href="/dashboard/guide"
             role="menuitem"
             onClick={() => setOpen(false)}
-            className="block rounded px-3 py-2 text-xs text-ink-muted hover:bg-surface-muted hover:text-ink"
+            className="block rounded-lg px-3 py-2 text-xs text-ink-muted hover:bg-surface-muted hover:text-ink"
           >
             Integration guide
           </Link>
@@ -91,7 +102,7 @@ export function AccountMenu({ name, email }: { name: string; email: string }) {
             role="menuitem"
             onClick={signOut}
             disabled={pending}
-            className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-xs text-ink-muted hover:bg-surface-muted hover:text-ink disabled:opacity-50"
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs text-ink-muted hover:bg-surface-muted hover:text-ink disabled:opacity-50"
           >
             <LogOut className="size-3.5" aria-hidden />
             {pending ? 'Signing out' : 'Sign out'}

@@ -40,7 +40,7 @@ export default function LoginPage() {
           <Logo href="/" />
         </div>
 
-        <div className="shadow-card rounded-lg bg-surface p-6">
+        <div className="shadow-card rounded-tile bg-surface p-6 sm:p-7">
           <h1 className="text-lg font-semibold text-ink">Sign in</h1>
           <p className="mt-1 text-sm text-ink-muted">
             The dashboard is for your team. Your servers use an API key instead.
@@ -75,7 +75,7 @@ export default function LoginPage() {
             {error && (
               <p
                 role="alert"
-                className="rounded-md px-3 py-2 text-xs"
+                className="rounded-well px-3.5 py-2.5 text-xs"
                 style={{
                   backgroundColor: 'var(--bad-bg)',
                   color: 'var(--bad-fg)',

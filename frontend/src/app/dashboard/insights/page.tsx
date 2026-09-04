@@ -63,7 +63,7 @@ export default function InsightsPage() {
       />
 
       <div
-        className="mb-4 inline-flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs"
+        className="mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs"
         style={{ backgroundColor: 'var(--neutral-bg)', color: 'var(--neutral-fg)' }}
       >
         <Sparkles className="size-3.5" aria-hidden />
@@ -85,10 +85,10 @@ export default function InsightsPage() {
               <Panel key={i}>
                 <PanelBody>
                   <div className="mt-1 space-y-2">
-                    <div className="h-3.5 w-2/3 animate-pulse rounded bg-surface-muted" />
-                    <div className="h-3 w-full animate-pulse rounded bg-surface-muted" />
-                    <div className="h-3 w-5/6 animate-pulse rounded bg-surface-muted" />
-                    <div className="h-3 w-3/4 animate-pulse rounded bg-surface-muted" />
+                    <div className="h-3.5 w-2/3 animate-pulse rounded-full bg-surface-muted" />
+                    <div className="h-3 w-full animate-pulse rounded-full bg-surface-muted" />
+                    <div className="h-3 w-5/6 animate-pulse rounded-full bg-surface-muted" />
+                    <div className="h-3 w-3/4 animate-pulse rounded-full bg-surface-muted" />
                   </div>
                 </PanelBody>
               </Panel>
@@ -115,7 +115,7 @@ export default function InsightsPage() {
           <span className="text-xs text-ink-faint">Counts and timings only</span>
         </PanelHeader>
         <PanelBody>
-          <pre className="scrollbar-thin overflow-x-auto rounded-md bg-surface-muted p-3 text-xs leading-relaxed">
+          <pre className="scrollbar-thin overflow-x-auto rounded-well bg-surface-muted p-3.5 text-xs leading-relaxed">
             <code className="mono text-ink-muted">{JSON.stringify(context, null, 2)}</code>
           </pre>
           <p className="mt-3 text-xs text-ink-subtle">

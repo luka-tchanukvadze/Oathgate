@@ -28,7 +28,7 @@ export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInp
   return (
     <input
       className={cn(
-        'h-11 w-full rounded-md border border-line bg-surface px-3 text-sm text-ink sm:h-8 sm:px-2.5',
+        'h-11 w-full rounded-well border border-line bg-surface px-3 text-sm text-ink sm:h-9 sm:px-3',
         'placeholder:text-ink-subtle focus:border-accent focus:outline-none',
         className,
       )}
@@ -41,7 +41,7 @@ export function Select({ className, ...props }: React.SelectHTMLAttributes<HTMLS
   return (
     <select
       className={cn(
-        'h-11 w-full rounded-md border border-line bg-surface px-3 text-sm text-ink sm:h-8 sm:px-2.5 focus:border-accent focus:outline-none',
+        'h-11 w-full rounded-well border border-line bg-surface px-3 text-sm text-ink sm:h-9 sm:px-3 focus:border-accent focus:outline-none',
         className,
       )}
       {...props}

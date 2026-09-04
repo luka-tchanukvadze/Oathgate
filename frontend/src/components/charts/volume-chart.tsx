@@ -68,7 +68,7 @@ export function VolumeChart({
               if (!active || !payload?.length) return null;
               const point = payload[0].payload as (typeof points)[number];
               return (
-                <div className="shadow-pop rounded-md bg-surface px-2.5 py-2">
+                <div className="shadow-pop rounded-well bg-surface px-3 py-2">
                   <p className="text-2xs text-ink-faint">{point.label}</p>
                   {/* Formatted from the original minor-unit string, so what is
                       shown is exact even though the plotted height is not */}

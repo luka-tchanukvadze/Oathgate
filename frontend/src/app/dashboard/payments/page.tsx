@@ -138,7 +138,7 @@ function PaymentsInner() {
               setRange('all');
               setPage(0);
             }}
-            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium text-accent hover:bg-accent-soft"
+            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium text-accent hover:bg-accent-soft"
           >
             <X className="size-3" aria-hidden />
             Clear all filters
@@ -158,7 +158,7 @@ function PaymentsInner() {
               }}
               aria-pressed={filter === value}
               className={cn(
-                'shrink-0 rounded-md px-3 py-2 text-xs font-medium transition-colors sm:py-1',
+                'shrink-0 rounded-full px-3.5 py-2 text-xs font-medium transition-colors sm:py-1.5',
                 filter === value ? 'bg-accent-soft text-accent' : 'text-ink-muted hover:bg-surface-muted hover:text-ink',
               )}
             >
@@ -207,7 +207,7 @@ function PaymentsInner() {
         )}
 
         {!hardError && filtered.length > PAGE_SIZE && (
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-4 py-3 sm:px-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-3.5 sm:px-6">
             <p className="text-xs text-ink-subtle">
               {currentPage * PAGE_SIZE + 1} to {Math.min(filtered.length, (currentPage + 1) * PAGE_SIZE)} of{' '}
               {filtered.length}

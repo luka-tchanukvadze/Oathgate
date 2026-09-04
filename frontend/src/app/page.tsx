@@ -74,7 +74,7 @@ export default function LandingPage() {
           <nav className="ml-auto flex items-center">
             <Link
               href="/dashboard"
-              className="inline-flex h-9 items-center gap-1.5 rounded-md bg-accent px-4 text-sm font-medium text-on-accent transition-colors hover:bg-accent-hover"
+              className="inline-flex h-9 items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-medium text-on-accent transition-colors hover:bg-accent-hover"
             >
               Open the demo
               <ArrowRight className="size-3.5" aria-hidden />
@@ -99,7 +99,7 @@ export default function LandingPage() {
               <div className="mt-8">
                 <Link
                   href="/dashboard"
-                  className="inline-flex h-11 items-center gap-2 rounded-md bg-accent px-5 text-sm font-medium text-on-accent transition-colors hover:bg-accent-hover"
+                  className="inline-flex h-11 items-center gap-2 rounded-full bg-accent px-5 text-sm font-medium text-on-accent transition-colors hover:bg-accent-hover"
                 >
                   Open the demo
                   <ArrowRight className="size-4" aria-hidden />
@@ -112,15 +112,15 @@ export default function LandingPage() {
             </div>
 
             <div className="min-w-0 space-y-2">
-              <div className="overflow-hidden rounded-card border border-line">
+              <div className="shadow-card overflow-hidden rounded-tile">
                 <div className="border-b border-line px-4 py-2 text-xs text-ink-subtle">Create a payment</div>
-                <pre className="scrollbar-thin overflow-x-auto px-4 py-3 text-xs leading-relaxed">
+                <pre className="scrollbar-thin overflow-x-auto px-4 py-3.5 text-xs leading-relaxed">
                   <code className="mono text-ink">{CURL}</code>
                 </pre>
               </div>
-              <div className="overflow-hidden rounded-card border border-line bg-surface-muted">
+              <div className="shadow-card overflow-hidden rounded-tile bg-surface-muted">
                 <div className="border-b border-line px-4 py-2 text-xs text-ink-subtle">Response</div>
-                <pre className="scrollbar-thin overflow-x-auto px-4 py-3 text-xs leading-relaxed">
+                <pre className="scrollbar-thin overflow-x-auto px-4 py-3.5 text-xs leading-relaxed">
                   <code className="mono text-ink">{RESPONSE}</code>
                 </pre>
               </div>
@@ -174,7 +174,7 @@ export default function LandingPage() {
             </p>
             <Link
               href="/dashboard"
-              className="mt-7 inline-flex h-11 items-center gap-2 rounded-md bg-accent px-5 text-sm font-medium text-on-accent transition-colors hover:bg-accent-hover"
+              className="mt-7 inline-flex h-11 items-center gap-2 rounded-full bg-accent px-5 text-sm font-medium text-on-accent transition-colors hover:bg-accent-hover"
             >
               Open the demo
               <ArrowRight className="size-4" aria-hidden />

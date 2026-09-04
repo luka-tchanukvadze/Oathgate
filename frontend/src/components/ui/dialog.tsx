@@ -88,25 +88,25 @@ export function Dialog({
         aria-modal="true"
         aria-label={title}
         className={cn(
-          'shadow-pop relative z-10 max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl bg-surface sm:max-w-lg sm:rounded-card',
+          'shadow-pop relative z-10 max-h-[92dvh] w-full overflow-y-auto rounded-t-tile bg-surface sm:max-w-lg sm:rounded-tile',
           className,
         )}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
+        <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4 sm:px-6">
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-ink">{title}</h2>
+            <h2 className="text-[15px] font-semibold tracking-tight text-ink">{title}</h2>
             {description && <p className="mt-1 text-sm text-ink-subtle">{description}</p>}
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="-mr-1.5 -mt-1.5 grid size-9 shrink-0 place-items-center rounded-lg text-ink-muted hover:bg-surface-muted hover:text-ink"
+            className="-mr-1.5 -mt-1.5 grid size-9 shrink-0 place-items-center rounded-full text-ink-muted hover:bg-surface-muted hover:text-ink"
           >
             <X className="size-4" aria-hidden />
           </button>
         </div>
-        <div className="px-5 py-4">{children}</div>
+        <div className="px-5 py-5 sm:px-6">{children}</div>
       </div>
     </div>
   );

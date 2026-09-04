@@ -217,7 +217,7 @@ export default function GuidePage() {
         <ul className="divide-y divide-line">
           {SCREENS.map(({ href, name, what }) => (
             <li key={href}>
-              <Link href={href} className="flex items-center gap-4 px-5 py-3 hover:bg-surface-muted">
+              <Link href={href} className="flex items-center gap-4 px-5 py-3.5 hover:bg-surface-muted sm:px-6">
                 <span className="w-28 shrink-0 text-sm font-medium text-ink">{name}</span>
                 <span className="min-w-0 flex-1 text-sm text-ink-muted">{what}</span>
                 <ArrowRight className="size-3.5 shrink-0 text-ink-faint" aria-hidden />

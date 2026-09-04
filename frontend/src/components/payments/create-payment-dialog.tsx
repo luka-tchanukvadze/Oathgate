@@ -96,7 +96,7 @@ export function CreatePaymentDialog({ open, onClose }: { open: boolean; onClose:
           />
         </Field>
 
-        <div className="rounded-md border border-line bg-surface-muted px-3 py-2.5">
+        <div className="rounded-well border border-line bg-surface-muted px-3.5 py-3">
           <p className="text-xs text-ink-subtle">Sent to the API as</p>
           <p className="mono mt-1 text-sm text-ink">
             {minor ? (

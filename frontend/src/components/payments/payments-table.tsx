@@ -59,7 +59,7 @@ function SortHeader({
         type="button"
         onClick={() => onSort(column)}
         className={cn(
-          'inline-flex items-center gap-1 rounded transition-colors hover:text-ink',
+          'inline-flex items-center gap-1 rounded-full transition-colors hover:text-ink',
           active ? 'text-ink' : 'text-ink-subtle',
         )}
       >
@@ -123,18 +123,18 @@ export function PaymentsTable({
               {sortable ? (
                 <SortHeader label="Amount" column="amount" sort={sort} onSort={onSort} />
               ) : (
-                <th scope="col" className="px-5 py-2.5 font-medium">Amount</th>
+                <th scope="col" className="px-5 py-2.5 font-medium sm:px-6">Amount</th>
               )}
               {sortable ? (
                 <SortHeader label="Status" column="status" sort={sort} onSort={onSort} />
               ) : (
-                <th scope="col" className="px-5 py-2.5 font-medium">Status</th>
+                <th scope="col" className="px-5 py-2.5 font-medium sm:px-6">Status</th>
               )}
-              <th scope="col" className="px-5 py-2.5 font-medium">Reference</th>
+              <th scope="col" className="px-5 py-2.5 font-medium sm:px-6">Reference</th>
               {sortable ? (
                 <SortHeader label="Created" column="created" sort={sort} onSort={onSort} align="right" />
               ) : (
-                <th scope="col" className="px-5 py-2.5 text-right font-medium">Created</th>
+                <th scope="col" className="px-5 py-2.5 text-right font-medium sm:px-6">Created</th>
               )}
             </tr>
           </thead>
@@ -157,11 +157,11 @@ export function PaymentsTable({
                     </span>
                   </Link>
                 </td>
-                <td className="px-5 py-3">
+                <td className="px-5 py-3 sm:px-6">
                   <StatusBadge status={payment.status} />
                 </td>
-                <td className="max-w-56 truncate px-5 py-3 text-sm text-ink-muted">{payment.reference ?? '—'}</td>
-                <td className="px-5 py-3 text-right text-xs text-ink-subtle">
+                <td className="max-w-56 truncate px-5 py-3 text-sm text-ink-muted sm:px-6">{payment.reference ?? '—'}</td>
+                <td className="px-5 py-3 text-right text-xs text-ink-subtle sm:px-6">
                   {formatRelative(payment.createdAt)}
                 </td>
               </tr>
@@ -177,7 +177,7 @@ export function PaymentsTable({
           <li key={payment.id}>
             <Link
               href={`/dashboard/payments/${payment.id}`}
-              className="flex items-center gap-3 px-4 py-3.5 hover:bg-surface-muted"
+              className="flex items-center gap-3 px-5 py-3.5 hover:bg-surface-muted sm:px-6"
             >
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">

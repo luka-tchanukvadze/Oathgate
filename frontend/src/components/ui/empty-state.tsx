@@ -22,7 +22,7 @@ export function EmptyState({
       {description && <p className="max-w-md text-sm text-ink-subtle">{description}</p>}
       {action && <div className="mt-3">{action}</div>}
       {code && (
-        <pre className="scrollbar-thin mt-5 w-full max-w-xl overflow-x-auto rounded-md bg-surface-muted p-3 text-left text-xs leading-relaxed">
+        <pre className="scrollbar-thin mt-5 w-full max-w-xl overflow-x-auto rounded-well bg-surface-muted p-3.5 text-left text-xs leading-relaxed">
           <code className="mono text-ink-muted">{code}</code>
         </pre>
       )}

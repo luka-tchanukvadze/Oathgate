@@ -58,7 +58,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {/* aria-live so a screen reader hears the result of an action it cannot
           see happen. Errors assert, successes wait their turn */}
       <div
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] flex flex-col items-center gap-2 p-4 sm:inset-x-auto sm:right-0 sm:items-end"
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] flex flex-col items-center gap-2 p-4 pb-24 sm:inset-x-auto sm:right-0 sm:items-end lg:pb-4"
         role="region"
         aria-label="Notifications"
       >
@@ -67,7 +67,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             key={toast.id}
             role={toast.tone === 'error' ? 'alert' : 'status'}
             aria-live={toast.tone === 'error' ? 'assertive' : 'polite'}
-            className="shadow-pop pointer-events-auto flex w-full max-w-sm items-start gap-2.5 rounded-lg bg-surface px-3.5 py-3"
+            className="shadow-pop pointer-events-auto flex w-full max-w-sm items-start gap-2.5 rounded-tile bg-surface px-4 py-3"
           >
             <span
               className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full"
@@ -89,7 +89,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               type="button"
               onClick={() => dismiss(toast.id)}
               aria-label="Dismiss"
-              className="-mr-1 -mt-0.5 rounded p-1 text-ink-faint hover:bg-surface-muted hover:text-ink"
+              className="-mr-1 -mt-0.5 rounded-full p-1 text-ink-faint hover:bg-surface-muted hover:text-ink"
             >
               <X className="size-3.5" aria-hidden />
             </button>

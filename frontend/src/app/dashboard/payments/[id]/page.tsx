@@ -126,7 +126,7 @@ export default function PaymentDetailPage({ params }: { params: Promise<{ id: st
         Payments
       </Link>
 
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4 sm:mb-8">
         <div>
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="mono text-2xl font-semibold tracking-tight text-ink">
@@ -146,7 +146,7 @@ export default function PaymentDetailPage({ params }: { params: Promise<{ id: st
           <Link
             href={`/pay/${payment.id}`}
             target="_blank"
-            className="shadow-card inline-flex h-11 items-center gap-1.5 rounded-md bg-surface px-4 text-sm font-medium text-ink transition-colors hover:bg-surface-muted sm:h-8 sm:px-3.5"
+            className="shadow-card inline-flex h-11 items-center gap-1.5 rounded-full bg-surface px-4 text-sm font-medium text-ink transition-colors hover:bg-surface-muted sm:h-8 sm:px-3.5"
           >
             <ExternalLink className="size-3.5" aria-hidden />
             Checkout page
@@ -246,7 +246,7 @@ export default function PaymentDetailPage({ params }: { params: Promise<{ id: st
             ) : (
               <ul className="divide-y divide-line">
                 {webhooks.map((delivery) => (
-                  <li key={delivery.id} className="px-4 py-3.5 sm:px-5">
+                  <li key={delivery.id} className="px-5 py-4 sm:px-6">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="mono text-sm text-ink">{delivery.eventType}</span>
                       <WebhookBadge status={delivery.status} />
@@ -291,7 +291,7 @@ export default function PaymentDetailPage({ params }: { params: Promise<{ id: st
               <Detail label="Expires">{formatDateTime(payment.expiresAt)}</Detail>
               <Detail label="Mode">
                 <span
-                  className={cn('rounded px-1.5 py-0.5 text-xs font-medium')}
+                  className={cn('rounded-full px-2 py-0.5 text-xs font-medium')}
                   style={{
                     backgroundColor: payment.mode === 'TEST' ? 'var(--warn-bg)' : 'var(--ok-bg)',
                     color: payment.mode === 'TEST' ? 'var(--warn-fg)' : 'var(--ok-fg)',

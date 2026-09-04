@@ -78,7 +78,7 @@ export default function ApiKeysPage() {
           <ul className="divide-y divide-line">
             {rows.map((key) => (
               <li key={key.id} className="flex flex-wrap items-center gap-3 px-4 py-4 sm:px-5">
-                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-muted text-ink-subtle">
+                <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-surface-muted text-ink-subtle">
                   <KeyRound className="size-4" aria-hidden />
                 </span>
 
@@ -86,7 +86,7 @@ export default function ApiKeysPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-medium text-ink">{key.name}</span>
                     <span
-                      className="rounded px-1.5 py-0.5 text-xs font-medium"
+                      className="rounded-full px-2 py-0.5 text-xs font-medium"
                       style={{
                         backgroundColor: key.mode === 'TEST' ? 'var(--warn-bg)' : 'var(--ok-bg)',
                         color: key.mode === 'TEST' ? 'var(--warn-fg)' : 'var(--ok-fg)',
@@ -96,7 +96,7 @@ export default function ApiKeysPage() {
                     </span>
                     {key.revokedAt && (
                       <span
-                        className="rounded px-1.5 py-0.5 text-xs font-medium"
+                        className="rounded-full px-2 py-0.5 text-xs font-medium"
                         style={{ backgroundColor: 'var(--bad-bg)', color: 'var(--bad-fg)' }}
                       >
                         Revoked
@@ -175,7 +175,7 @@ export default function ApiKeysPage() {
       >
         <div className="space-y-4">
           <div
-            className="flex gap-2.5 rounded-lg px-3 py-2.5 text-xs"
+            className="flex gap-2.5 rounded-well px-3.5 py-3 text-xs"
             style={{ backgroundColor: 'var(--warn-bg)', color: 'var(--warn-fg)' }}
           >
             <AlertTriangle className="size-4 shrink-0" aria-hidden />
@@ -185,7 +185,7 @@ export default function ApiKeysPage() {
             </p>
           </div>
 
-          <div className="rounded-md bg-surface-muted p-3">
+          <div className="rounded-well bg-surface-muted p-3.5">
             <code className="mono block break-all text-sm text-ink">{revealed?.secret}</code>
             {revealed && <CopyButton value={revealed.secret} label="Copy key" className="-ml-2 mt-2" />}
           </div>
