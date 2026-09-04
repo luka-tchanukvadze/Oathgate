@@ -18,6 +18,7 @@ import {
   SecretCipher,
   WebhookDeliveryStatus,
 } from '@app/shared';
+import { OutboundHostService } from '../apps/worker/src/webhooks/outbound-host.service';
 import { WebhookSenderService } from '../apps/worker/src/webhooks/webhook-sender.service';
 
 // Three tries is enough to see one retry scheduled and then the budget run out
@@ -38,8 +39,14 @@ describe('webhook delivery when the merchant is down', () => {
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
       imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule],
-      providers: [WebhookSenderService, SecretCipher],
-    }).compile();
+      providers: [WebhookSenderService, SecretCipher, OutboundHostService],
+    })
+      // The endpoint under test is on 127.0.0.1, which the real check refuses
+      // These tests are about the retry schedule, not about where a webhook is
+      // allowed to point, and that policy has its own tests
+      .overrideProvider(OutboundHostService)
+      .useValue({ assertAllowed: () => Promise.resolve() })
+      .compile();
 
     await moduleRef.init();
 

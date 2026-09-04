@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
-  assertPublicHost,
   BACKOFF_SECONDS,
   DELIVERY_HEADER,
   EVENT_HEADER,
@@ -10,6 +9,7 @@ import {
   SIGNATURE_HEADER,
   WebhookDeliveryStatus,
 } from '@app/shared';
+import { OutboundHostService } from './outbound-host.service';
 import { signPayload } from './webhook-signature';
 
 interface SendOutcome {
@@ -27,6 +27,7 @@ export class WebhookSenderService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cipher: SecretCipher,
+    private readonly hosts: OutboundHostService,
   ) {}
 
   async deliver(deliveryId: string): Promise<void> {
@@ -90,7 +91,7 @@ export class WebhookSenderService {
       // repointed at a private address after the url was accepted
       // A refusal lands in the catch below and is recorded like any other
       // failed attempt, so the delivery retries and then dead letters
-      await assertPublicHost(new URL(url).hostname);
+      await this.hosts.assertAllowed(url);
 
       const response = await fetch(url, {
         method: 'POST',

@@ -13,6 +13,7 @@ import { ChainReorgService } from './chain/chain-reorg.service';
 import { ChainSettlementService } from './chain/chain-settlement.service';
 import { ChainWatcherService } from './chain/chain-watcher.service';
 import { ExpiryService } from './payments/expiry.service';
+import { OutboundHostService } from './webhooks/outbound-host.service';
 import { OutboxRelayService } from './webhooks/outbox-relay.service';
 import { WebhookProcessor } from './webhooks/webhook.processor';
 import { WebhookRetryService } from './webhooks/webhook-retry.service';
@@ -34,6 +35,7 @@ import { WebhookSenderService } from './webhooks/webhook-sender.service';
     ChainSettlementService,
     ChainWatcherService,
     ExpiryService,
+    OutboundHostService,
     OutboxRelayService,
     WebhookSenderService,
     WebhookProcessor,
