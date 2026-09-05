@@ -24,11 +24,8 @@ import type {
   WebhookDeliveryDetail,
   WebhookEndpoint,
 } from '@/types';
+import { MAX_WEBHOOK_ATTEMPTS, MIN_CONFIRMATIONS } from '@/lib/constants';
 
-const CONFIRMATIONS_REQUIRED = 3;
-
-// Matches BACKOFF_SECONDS.length + 1 in the backend
-const MAX_ATTEMPTS = 7;
 const ENDPOINT_ID = 'whe_default';
 const WEBHOOK_URL = 'https://merchant.example.com/webhooks/oathgate';
 
@@ -182,7 +179,7 @@ function webhookFor(
     eventType,
     status: 'DELIVERED',
     attempts: 1,
-    maxAttempts: MAX_ATTEMPTS,
+    maxAttempts: MAX_WEBHOOK_ATTEMPTS,
     lastResponseStatus: 200,
     deliveredAt: at,
     attemptLog: [
@@ -469,13 +466,13 @@ export const mock = {
     };
     db().chainTxs.push(tx);
 
-    for (let step = 1; step <= CONFIRMATIONS_REQUIRED; step += 1) {
+    for (let step = 1; step <= MIN_CONFIRMATIONS; step += 1) {
       setTimeout(() => {
         tx.confirmations = step;
         if (step === 1) tx.blockHash = hex(64);
         payment.updatedAt = new Date().toISOString();
 
-        if (step === CONFIRMATIONS_REQUIRED) {
+        if (step === MIN_CONFIRMATIONS) {
           const at = new Date().toISOString();
           payment.status = 'PAID';
           db().ledger.push(...ledgerPairFor(payment, at));
@@ -558,8 +555,8 @@ export const mock = {
       },
       {
         id: 'timing',
-        headline: 'Confirmations landing in about 25 minutes',
-        body: 'Median time from first sighting to the 3 confirmation threshold. Dropping to 2 would roughly halve it, at a higher reorg risk on larger amounts.',
+        headline: 'Payments settling about 9 minutes after they are seen',
+        body: 'Median time from first sighting in the mempool to the block that confirms it. That wait is the chain, not the gateway, and raising the threshold multiplies it.',
         tone: 'neutral',
       },
     ];

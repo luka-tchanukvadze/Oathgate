@@ -12,6 +12,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { getPaymentDetail, queryKeys, simulatePayment } from '@/lib/api';
 import { formatCrypto, formatFiat } from '@/lib/format/money';
 import { timeUntil } from '@/lib/format/date';
+import { MIN_CONFIRMATIONS } from '@/lib/constants';
 
 // The page a shopper sees. Not the merchant dashboard, so no navigation, no
 // mode switch, and nothing on it needs an account
@@ -117,7 +118,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
               {payment.status === 'CONFIRMING' ? (
                 <>
                   <StatusBadge status={payment.status} />
-                  <span className="mono text-ink-subtle">{confirmations} of 3 confirmations</span>
+                  <span className="mono text-ink-subtle">{confirmations} of {MIN_CONFIRMATIONS} confirmations</span>
                 </>
               ) : remaining ? (
                 <>
