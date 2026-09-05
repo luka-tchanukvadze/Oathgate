@@ -200,3 +200,168 @@
       0 12px 32px -8px rgba(10, 37, 64, 0.18);
   }
 }
+
+/* The landing hero, and only the hero
+   The product is a light app and stays one. The hero goes dark because the
+   thing it has to do is stop somebody scrolling, and a bright panel of moving
+   numbers on near black does that in a way a white page cannot */
+
+.hero {
+  --hero-bg: #060f21;
+  --hero-well: #0b1730;
+  --hero-line: #1b2c4e;
+  --hero-ink: #f5f8ff;
+  --hero-ink-muted: #a9bad6;
+  --hero-ink-faint: #6d82a5;
+  --hero-accent: #4f83ff;
+  --hero-ok: #34d399;
+  --hero-wait: #fbbf24;
+
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background-color: var(--hero-bg);
+  color: var(--hero-ink);
+}
+
+/* Two soft lights that drift past each other
+   A still gradient reads as a background, a moving one reads as a system that
+   is running */
+.hero::before,
+.hero::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+}
+
+.hero::before {
+  top: -18rem;
+  left: -10rem;
+  width: 44rem;
+  height: 44rem;
+  background: radial-gradient(closest-side, rgba(37, 99, 235, 0.5), transparent);
+  animation: hero-drift-a 19s ease-in-out infinite alternate;
+}
+
+.hero::after {
+  right: -14rem;
+  bottom: -22rem;
+  width: 40rem;
+  height: 40rem;
+  background: radial-gradient(closest-side, rgba(16, 185, 129, 0.26), transparent);
+  animation: hero-drift-b 23s ease-in-out infinite alternate;
+}
+
+@keyframes hero-drift-a {
+  to {
+    transform: translate3d(9rem, 5rem, 0) scale(1.16);
+  }
+}
+
+@keyframes hero-drift-b {
+  to {
+    transform: translate3d(-7rem, -4rem, 0) scale(1.1);
+  }
+}
+
+.hero-panel {
+  background-color: rgba(11, 23, 48, 0.72);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  box-shadow:
+    0 0 0 1px var(--hero-line),
+    0 30px 70px -20px rgba(0, 0, 0, 0.75);
+}
+
+.hero-dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 9999px;
+  background-color: var(--hero-accent);
+  box-shadow: 0 0 0 0 rgba(79, 131, 255, 0.6);
+  animation: hero-ping 2s ease-out infinite;
+}
+
+@keyframes hero-ping {
+  70%,
+  100% {
+    box-shadow: 0 0 0 0.5rem rgba(79, 131, 255, 0);
+  }
+}
+
+.hero-caret {
+  display: inline-block;
+  width: 0.5ch;
+  height: 1em;
+  margin-left: 1px;
+  vertical-align: -0.15em;
+  background-color: var(--hero-accent);
+  animation: hero-blink 1s steps(2, start) infinite;
+}
+
+@keyframes hero-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.hero-rise {
+  animation: hero-rise 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.hero-badge-pending {
+  background-color: rgba(251, 191, 36, 0.16);
+  color: #fcd34d;
+}
+
+.hero-badge-confirming {
+  background-color: rgba(79, 131, 255, 0.18);
+  color: #93b4ff;
+}
+
+.hero-badge-paid {
+  background-color: rgba(52, 211, 153, 0.16);
+  color: #6ee7b7;
+}
+
+/* background-clip text paints the gradient through the letters instead of
+   behind them, and moving the gradient makes the line catch the light */
+.hero-shine {
+  background-image: linear-gradient(
+    100deg,
+    #6ea0ff 0%,
+    #a5c3ff 30%,
+    #6ee7b7 58%,
+    #6ea0ff 100%
+  );
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: hero-sweep 8s linear infinite;
+}
+
+@keyframes hero-sweep {
+  to {
+    background-position: 220% 0;
+  }
+}
