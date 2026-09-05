@@ -2,11 +2,26 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Logo } from '@/components/layout/logo';
 import { LiveSettlement } from '@/components/marketing/live-settlement';
+import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/card';
+import { Panel, PanelBody } from '@/components/ui/panel';
+import { Stat } from '@/components/ui/stat';
 import {
   MAX_WEBHOOK_ATTEMPTS,
   MIN_CONFIRMATIONS,
   QUOTE_TTL_MINUTES,
 } from '@/lib/constants';
+
+// The same size and spacing PageHeader gives every screen in the dashboard
+// It cannot be PageHeader itself, because that renders an h1 and the hero
+// already used the one this page gets
+function SectionHeading({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="mb-6 sm:mb-8">
+      <h2 className="text-xl font-semibold tracking-tight text-ink">{title}</h2>
+      <p className="mt-1 max-w-2xl text-sm text-ink-subtle">{description}</p>
+    </div>
+  );
+}
 
 // One job: get a recruiter into the demo in one click, and give an engineer
 // something to paste into a terminal without signing up. Nothing here that does
@@ -15,23 +30,24 @@ import {
 const FACTS = [
   {
     value: 'NUMERIC(38,0)',
+    mono: true,
     label: 'Every amount, fiat and crypto',
-    body: 'Integers all the way down. No float touches money at any layer, including this page.',
+    body: 'Integers all the way down, at every layer including this page',
   },
   {
     value: '2 rows',
     label: 'Per movement of money',
-    body: 'Double entry, append only. A balance is a sum of entries I can rebuild at any time.',
+    body: 'Double entry and append only, so a balance is a sum I can rebuild',
   },
   {
     value: `${QUOTE_TTL_MINUTES} minutes`,
     label: 'A quote stays good for',
-    body: 'The rate is locked when the payment is created, so the price cannot move under the customer.',
+    body: 'Locked when the payment is created, so the price cannot move',
   },
   {
     value: `${MAX_WEBHOOK_ATTEMPTS} attempts`,
     label: 'Before a webhook dead letters',
-    body: 'Exponential backoff from ten seconds to six hours, then it stops and waits for a replay.',
+    body: 'Backing off from ten seconds to six hours, then it waits for a replay',
   },
 ];
 
@@ -79,7 +95,7 @@ const DEPTH = [
 
 export default function LandingPage() {
   return (
-    <div className="min-h-dvh bg-surface">
+    <div className="min-h-dvh bg-canvas">
       <section className="hero">
         <header className="relative z-10">
           <div className="mx-auto flex h-20 max-w-6xl items-center px-5 sm:px-8">
@@ -146,60 +162,69 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <main>
-        <section className="border-b border-line bg-canvas">
-          <div className="mx-auto grid max-w-6xl gap-x-8 gap-y-9 px-5 py-16 sm:grid-cols-2 sm:px-8 lg:grid-cols-4">
-            {FACTS.map(({ value, label, body }) => (
-              <div key={label}>
-                <p className="mono text-lg font-semibold tracking-tight text-ink">{value}</p>
-                <p className="mt-1 text-xs font-semibold uppercase tracking-[0.08em] text-ink-faint">
-                  {label}
-                </p>
-                <p className="mt-2.5 text-sm leading-relaxed text-ink-subtle">{body}</p>
-              </div>
+      {/* Everything below the hero is built out of the components the dashboard
+          is built out of, so scrolling from here into the demo looks like one
+          product rather than a site and an app that share a logo */}
+      <main className="bg-canvas">
+        <section className="mx-auto max-w-6xl px-5 py-16 sm:px-8">
+          <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4">
+            {FACTS.map(({ value, label, body, mono }) => (
+              <Stat
+                key={label}
+                label={label}
+                value={mono ? <span className="mono">{value}</span> : value}
+                previous={body}
+              />
             ))}
           </div>
         </section>
 
-        <section className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
-          <h2 className="text-2xl font-semibold tracking-tight text-ink">How a payment works</h2>
-          <div className="mt-10 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
-            {STEPS.map(({ n, title, body }) => (
-              <div key={n} className="relative border-t-2 border-accent-line pt-5">
-                <span className="mono text-xs font-semibold text-accent">{n}</span>
-                <h3 className="mt-2 text-base font-semibold text-ink">{title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-ink-subtle">{body}</p>
-              </div>
-            ))}
-          </div>
+        <section className="mx-auto max-w-6xl px-5 pb-16 sm:px-8">
+          <SectionHeading
+            title="How a payment works"
+            description="Four steps, from the till to the merchant's balance."
+          />
 
-          <p className="mt-10 max-w-3xl text-sm leading-relaxed text-ink-muted">
-            The threshold is {MIN_CONFIRMATIONS} confirmation. A confirmation is not a second
-            opinion, it is a price: reversing the payment now means rebuilding that many blocks
-            faster than everybody else together, and that is already far more than a coffee is worth
-            stealing. Six blocks on a ten minute chain is an hour of a customer standing at a
-            counter.
-          </p>
-        </section>
-
-        <section className="border-y border-line bg-canvas">
-          <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
-            <h2 className="text-2xl font-semibold tracking-tight text-ink">
-              The parts that are hard to get right
-            </h2>
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-muted">
-              A payment gateway is not a CRUD app with a status column. These are the pieces that
-              decide whether it can be trusted with money.
-            </p>
-
-            <dl className="mt-11 grid gap-x-10 gap-y-9 sm:grid-cols-2">
-              {DEPTH.map(({ title, body }) => (
-                <div key={title} className="shadow-card rounded-tile bg-surface px-6 py-6">
-                  <dt className="text-base font-semibold text-ink">{title}</dt>
-                  <dd className="mt-2 text-sm leading-relaxed text-ink-subtle">{body}</dd>
+          <Panel>
+            <PanelBody className="grid gap-x-8 gap-y-9 sm:grid-cols-2 lg:grid-cols-4">
+              {STEPS.map(({ n, title, body }) => (
+                <div key={n}>
+                  <span className="mono text-xs font-semibold text-accent">{n}</span>
+                  <h3 className="mt-2 text-sm font-semibold text-ink">{title}</h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-ink-subtle">{body}</p>
                 </div>
               ))}
-            </dl>
+            </PanelBody>
+
+            <div className="border-t border-line px-5 py-5 sm:px-6">
+              <p className="max-w-3xl text-sm leading-relaxed text-ink-muted">
+                The threshold is {MIN_CONFIRMATIONS} confirmation. A confirmation is not a second
+                opinion, it is a price: reversing the payment now means rebuilding that many blocks
+                faster than everybody else together, and that is already far more than a coffee is
+                worth stealing. Six blocks on a ten minute chain is an hour of a customer standing
+                at a counter.
+              </p>
+            </div>
+          </Panel>
+        </section>
+
+        <section className="mx-auto max-w-6xl px-5 pb-20 sm:px-8">
+          <SectionHeading
+            title="The parts that are hard to get right"
+            description="A payment gateway is not a CRUD app with a status column. These are the pieces that decide whether it can be trusted with money."
+          />
+
+          <div className="grid gap-4 sm:grid-cols-2 sm:gap-5">
+            {DEPTH.map(({ title, body }) => (
+              <Card key={title}>
+                <CardHeader>
+                  <CardTitle>{title}</CardTitle>
+                </CardHeader>
+                <CardBody>
+                  <p className="text-sm leading-relaxed text-ink-subtle">{body}</p>
+                </CardBody>
+              </Card>
+            ))}
           </div>
         </section>
 
@@ -223,7 +248,7 @@ export default function LandingPage() {
         </section>
       </main>
 
-      <footer className="border-t border-line bg-surface">
+      <footer>
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-8 text-xs text-ink-faint sm:px-8">
           <span>Oathgate by Luka Tchanukvadze</span>
           <span>Bitcoin testnet only. No real funds move through this.</span>
