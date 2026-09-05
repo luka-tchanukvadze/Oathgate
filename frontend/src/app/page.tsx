@@ -1,7 +1,7 @@
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
 import { Logo } from '@/components/layout/logo';
 import { LiveSettlement } from '@/components/marketing/live-settlement';
+import { StartSandboxButton } from '@/components/sandbox/start-sandbox-button';
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/card';
 import { Panel, PanelBody } from '@/components/ui/panel';
 import { Stat } from '@/components/ui/stat';
@@ -100,14 +100,17 @@ export default function LandingPage() {
         <header className="relative z-10">
           <div className="mx-auto flex h-20 max-w-6xl items-center px-5 sm:px-8">
             <Logo onDark />
-            <nav className="ml-auto flex items-center gap-2">
+            <nav className="ml-auto flex items-center gap-1 sm:gap-2">
+              {/* Quiet, but it has to be here
+                  Every other route into the product creates an account, and a
+                  merchant who already has one needs a door that does not */}
               <Link
-                href="/dashboard"
-                className="inline-flex h-10 items-center gap-1.5 rounded-full bg-(--hero-ink) px-5 text-sm font-semibold text-(--hero-bg) transition-transform hover:scale-[1.03]"
+                href="/login"
+                className="inline-flex h-10 items-center rounded-full px-4 text-sm font-semibold text-(--hero-ink-muted) transition-colors hover:text-(--hero-ink)"
               >
-                Open the demo
-                <ArrowRight className="size-3.5" aria-hidden />
+                Sign in
               </Link>
+              <StartSandboxButton className="inline-flex h-10 items-center gap-1.5 rounded-full bg-(--hero-ink) px-5 text-sm font-semibold text-(--hero-bg) transition-transform hover:scale-[1.03] disabled:scale-100 disabled:opacity-70" />
             </nav>
           </div>
         </header>
@@ -129,13 +132,7 @@ export default function LandingPage() {
               </p>
 
               <div className="mt-9 flex flex-wrap items-center gap-3">
-                <Link
-                  href="/dashboard"
-                  className="inline-flex h-12 items-center gap-2 rounded-full bg-(--hero-accent) px-6 text-sm font-semibold text-white transition-transform hover:scale-[1.03]"
-                >
-                  Open the demo
-                  <ArrowRight className="size-4" aria-hidden />
-                </Link>
+                <StartSandboxButton className="inline-flex h-12 items-center gap-2 rounded-full bg-(--hero-accent) px-6 text-sm font-semibold text-white transition-transform hover:scale-[1.03] disabled:scale-100 disabled:opacity-70" />
                 <Link
                   href="/dashboard/guide"
                   className="inline-flex h-12 items-center rounded-full px-6 text-sm font-semibold text-(--hero-ink) ring-1 ring-(--hero-line) transition-colors hover:bg-white/5"
@@ -237,13 +234,9 @@ export default function LandingPage() {
               Create a payment, pay it, and watch the status move while the ledger entries appear
               and the webhook fires. Then reverse it and watch the compensating pair get written.
             </p>
-            <Link
-              href="/dashboard"
-              className="mt-9 inline-flex h-12 items-center gap-2 rounded-full bg-(--hero-accent) px-6 text-sm font-semibold text-white transition-transform hover:scale-[1.03]"
-            >
-              Open the demo
-              <ArrowRight className="size-4" aria-hidden />
-            </Link>
+            <div className="mt-9">
+              <StartSandboxButton className="inline-flex h-12 items-center gap-2 rounded-full bg-(--hero-accent) px-6 text-sm font-semibold text-white transition-transform hover:scale-[1.03] disabled:scale-100 disabled:opacity-70" />
+            </div>
           </div>
         </section>
       </main>

@@ -11,6 +11,12 @@ export interface Session {
 // here once the backend is wired up
 const MOCK_SESSION_KEY = 'oathgate-mock-session';
 
+// Mock only. Without a backend the sandbox button has no endpoint to call, so
+// it opens a session through the same door the mock login uses
+export function startMockSession(): void {
+  localStorage.setItem(MOCK_SESSION_KEY, 'sandbox@oathgate.invalid');
+}
+
 export async function login(email: string, password: string): Promise<Session> {
   if (USING_MOCK) {
     // Deliberately shallow. There is no password to check against in a mock,

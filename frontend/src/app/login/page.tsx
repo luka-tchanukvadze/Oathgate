@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/layout/logo';
+import { StartSandboxButton } from '@/components/sandbox/start-sandbox-button';
 import { Button } from '@/components/ui/button';
 import { Field, Input } from '@/components/ui/field';
 import { login } from '@/lib/api/auth';
@@ -91,10 +92,20 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="mt-6 text-center text-xs text-ink-subtle">
-          There is no sign up. A gateway anyone can register with is a
-          compliance product, not a demo.
-        </p>
+        <div className="mt-6 text-center">
+          <p className="text-xs text-ink-subtle">
+            There is no sign up. A real gateway has to check who a business is
+            before it moves money for them, and that is a legal process rather
+            than a screen. A sandbox behaves the same and takes one click.
+          </p>
+
+          <div className="mt-5 flex justify-center">
+            <StartSandboxButton
+              className="inline-flex h-10 items-center gap-2 rounded-full px-5 text-sm font-semibold text-ink ring-1 ring-line transition-colors hover:bg-canvas disabled:opacity-70"
+              label="Open a sandbox instead"
+            />
+          </div>
+        </div>
       </div>
     </main>
   );
