@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { ApiError } from '@/lib/api/client';
 import { getSession } from '@/lib/api/auth';
@@ -21,6 +22,7 @@ export function StartSandboxButton({
   label?: string;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
 
@@ -36,8 +38,12 @@ export function StartSandboxButton({
       // sandbox one and look exactly like being logged out
       const existing = await getSession();
 
+      // A new workspace means every cached answer belongs to somebody else
+      // The query keys carry the mode and not the merchant, so without this the
+      // dashboard paints the last visitor's payments until the refetch lands
       if (!existing) {
         await createSandbox();
+        queryClient.clear();
       }
 
       router.push('/dashboard');

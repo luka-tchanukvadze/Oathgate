@@ -9,8 +9,13 @@ import { logout } from '@/lib/api/auth';
 
 // Rounded down, so twenty three and a half hours reads as 23 rather than as a
 // day that is already partly spent
-function hoursLeft(expiresAt: string): number {
-  return Math.max(0, Math.floor((Date.parse(expiresAt) - Date.now()) / 3_600_000));
+function timeLeft(expiresAt: string): string {
+  const hours = Math.floor((Date.parse(expiresAt) - Date.now()) / 3_600_000);
+
+  if (hours <= 0) return 'in under an hour';
+  if (hours === 1) return 'in an hour';
+
+  return `in ${hours} hours`;
 }
 
 function initials(name: string): string {
@@ -109,8 +114,8 @@ export function AccountMenu({
             <div className="flex items-start gap-2 border-b border-line px-3 py-2 text-2xs text-ink-subtle">
               <Clock className="mt-px size-3 shrink-0" aria-hidden />
               <span>
-                Sandbox workspace. It stops working in {hoursLeft(expiresAt)} hours, and
-                nothing in it is yours to keep.
+                Sandbox workspace. It stops working {timeLeft(expiresAt)}, and nothing
+                in it is yours to keep.
               </span>
             </div>
           )}

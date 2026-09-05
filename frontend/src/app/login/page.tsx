@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { Logo } from '@/components/layout/logo';
 import { StartSandboxButton } from '@/components/sandbox/start-sandbox-button';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import { ApiError } from '@/lib/api/client';
 
 export default function LoginPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -23,6 +25,8 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
+      // Whoever was here before is not who is here now
+      queryClient.clear();
       // replace, not push, so the back button does not land on a login form
       // the merchant has already passed
       router.replace('/dashboard');
