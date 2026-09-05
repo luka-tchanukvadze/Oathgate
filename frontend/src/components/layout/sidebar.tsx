@@ -86,7 +86,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
       {/* Centred in the rail rather than pinned to its left edge
           Flush left it read as stranded in the corner, with 36px of margin on
           one side of it and 160px of empty rail on the other */}
-      <div className="flex h-14 shrink-0 items-center justify-center px-5">
+      <div className="flex h-24 shrink-0 items-center justify-center px-5">
         <Logo href="/dashboard" />
       </div>
 

@@ -99,25 +99,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         Skip to content
       </a>
 
-      {/* Fixed height and sticky, so the rail below can subtract exactly this
-          much. With h-dvh the sidebar footer sat under the fold */}
-      <div
-        className="sticky top-0 z-30 flex h-7 items-center justify-center px-3 text-center text-2xs font-semibold uppercase tracking-[0.08em]"
-        style={{ backgroundColor: 'var(--warn-bg)', color: 'var(--warn-fg)' }}
-      >
-        <span className="sm:hidden">Bitcoin testnet</span>
-        <span className="hidden sm:inline">
-          Bitcoin testnet. A real chain, with coins that carry no value
-        </span>
-      </div>
-
       <div className="mx-auto flex w-full max-w-[1600px]">
-        <aside className="sticky top-7 hidden h-[calc(100dvh-1.75rem)] w-64 shrink-0 bg-canvas lg:block xl:w-72">
+        <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 bg-canvas lg:block xl:w-72">
           <SidebarNav />
         </aside>
 
         <div className="min-w-0 flex-1">
-          <header className="sticky top-7 z-20">
+          <header className="sticky top-0 z-20">
             {/* The sheet is its own element and reaches 28px below the row, so
                 the fade lands on empty canvas rather than on the controls */}
             <div
@@ -128,7 +116,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               )}
             />
 
-            <div className="relative flex h-14 items-center gap-2 px-4 sm:gap-3 sm:px-6 lg:px-8">
+            <div className="relative flex h-18 items-center gap-2 px-4 sm:h-24 sm:gap-3 sm:px-6 lg:px-8">
               <button
                 ref={menuButtonRef}
                 type="button"
