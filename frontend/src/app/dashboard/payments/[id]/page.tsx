@@ -1,6 +1,6 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState } from 'react';
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ExternalLink, PlayCircle, Undo2 } from 'lucide-react';
@@ -10,6 +10,8 @@ import { StatusBadge, WebhookBadge } from '@/components/ui/status-badge';
 import { CopyButton } from '@/components/ui/copy-button';
 import { JsonBlock } from '@/components/ui/json-block';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog } from '@/components/ui/dialog';
+import { Field, Input } from '@/components/ui/field';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LedgerTable } from '@/components/ledger/ledger-table';
 import { StateMachine } from '@/components/charts/state-machine';
@@ -21,6 +23,7 @@ import { cn, truncateMiddle } from '@/lib/utils';
 import { useToast } from '@/components/ui/toast';
 import { ErrorState } from '@/components/ui/error-state';
 import { useMode } from '@/hooks/use-mode';
+import { MIN_CONFIRMATIONS } from '@/lib/constants';
 
 const TONE_COLOR = {
   neutral: 'var(--ink-subtle)',
@@ -34,6 +37,8 @@ export default function PaymentDetailPage({ params }: { params: Promise<{ id: st
   const { mode } = useMode();
   const queryClient = useQueryClient();
   const toast = useToast();
+  const [asking, setAsking] = useState(false);
+  const [reason, setReason] = useState('');
 
   const detail = useQuery({
     queryKey: queryKeys.paymentDetail(id),
@@ -65,9 +70,11 @@ export default function PaymentDetailPage({ params }: { params: Promise<{ id: st
   });
 
   const reverse = useMutation({
-    mutationFn: () => reversePayment(id),
+    mutationFn: () => reversePayment(id, mode, reason.trim()),
     onSuccess: () => {
       invalidate();
+      setAsking(false);
+      setReason('');
       toast.success('Payment reversed', 'A compensating pair was written, nothing was deleted');
     },
     onError: (error) => toast.error('Could not reverse this payment', error.message),
@@ -160,9 +167,9 @@ export default function PaymentDetailPage({ params }: { params: Promise<{ id: st
           )}
 
           {payment.status === 'PAID' && (
-            <Button variant="danger" onClick={() => reverse.mutate()} loading={reverse.isPending}>
+            <Button variant="danger" onClick={() => setAsking(true)}>
               <Undo2 className="size-4" aria-hidden />
-              Reverse (simulate reorg)
+              Reverse
             </Button>
           )}
         </div>
@@ -175,13 +182,17 @@ export default function PaymentDetailPage({ params }: { params: Promise<{ id: st
               <span className="size-2 animate-pulse rounded-full bg-[var(--info-fg)]" aria-hidden />
               <p className="text-sm text-ink">
                 Waiting for confirmations,{' '}
-                <span className="mono font-medium">{confirmations} of 3</span>
+                <span className="mono font-medium">
+                  {confirmations} of {MIN_CONFIRMATIONS}
+                </span>
               </p>
             </div>
             <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-muted">
               <div
                 className="h-full rounded-full bg-[var(--info-fg)] transition-all duration-500"
-                style={{ width: `${Math.min(100, (confirmations / 3) * 100)}%` }}
+                style={{
+                  width: `${Math.min(100, (confirmations / MIN_CONFIRMATIONS) * 100)}%`,
+                }}
               />
             </div>
           </CardBody>
@@ -331,6 +342,50 @@ export default function PaymentDetailPage({ params }: { params: Promise<{ id: st
           <JsonBlock value={payment} title="Payment object" />
         </div>
       </div>
+
+      {/* The reason is asked for rather than defaulted, because it is the only
+          part of a reversal a person has to supply and it ends up in the
+          webhook the merchant's own server receives */}
+      <Dialog
+        open={asking}
+        onClose={() => setAsking(false)}
+        title="Reverse this payment"
+        description="The original entries stay where they are. An opposite pair is written next to them, each one naming the entry it undoes, so the balance falls back and the history keeps both halves."
+      >
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            reverse.mutate();
+          }}
+          className="space-y-4"
+        >
+          <Field label="Reason">
+            <Input
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              placeholder="Customer refunded"
+              maxLength={200}
+              autoFocus
+              required
+            />
+          </Field>
+
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => setAsking(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="danger"
+              loading={reverse.isPending}
+              disabled={reason.trim().length < 3}
+            >
+              <Undo2 className="size-4" aria-hidden />
+              Reverse
+            </Button>
+          </div>
+        </form>
+      </Dialog>
     </>
   );
 }

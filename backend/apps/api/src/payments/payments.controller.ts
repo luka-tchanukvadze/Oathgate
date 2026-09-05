@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ConflictException,
   ForbiddenException,
   Get,
   Headers,
@@ -14,12 +15,13 @@ import {
 import type { AuthenticatedMerchant } from '../auth/auth.types';
 import { CurrentMerchant } from '../auth/decorators/current-merchant.decorator';
 import { ApiKeyGuard } from '../auth/guards/api-key.guard';
-import { KeyMode, SettlementService } from '@app/shared';
+import { KeyMode, PaymentStatus, SettlementService } from '@app/shared';
 import { requireIdempotencyKey } from '../idempotency/idempotency-key';
 import { IdempotencyService } from '../idempotency/idempotency.service';
 import { hashRequest } from '../idempotency/request-hash';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { ListPaymentsDto } from './dto/list-payments.dto';
+import { ReversePaymentDto } from './dto/reverse-payment.dto';
 import { toPaymentResponse } from './payment.response';
 import { PaymentsService } from './payments.service';
 
@@ -94,6 +96,37 @@ export class PaymentsController {
     }
 
     const { payment } = await this.settlement.settle(merchant.merchantId, id);
+
+    return toPaymentResponse(payment);
+  }
+
+  // A refund, and the one place the append only rule earns its keep
+  // Nothing is deleted: the original pair stays and an opposite pair is written
+  // next to it, each new entry naming the one it undoes
+  //
+  // No idempotency key, because calling it twice is already safe
+  // The second call finds no entries left to undo and changes nothing
+  @Post(':id/reverse')
+  @HttpCode(200)
+  async reverse(
+    @CurrentMerchant() merchant: AuthenticatedMerchant,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ReversePaymentDto,
+  ) {
+    const { payment, reversed } = await this.settlement.reverse(
+      merchant.merchantId,
+      id,
+      dto.reason,
+    );
+
+    // Already reversed answers 200 with the same body the first call gave
+    // Anything else never had money to take back, and saying so is more use
+    // than a 200 that quietly did nothing
+    if (!reversed && payment.status !== PaymentStatus.REVERSED) {
+      throw new ConflictException(
+        `only a paid payment can be reversed, this one is ${payment.status}`,
+      );
+    }
 
     return toPaymentResponse(payment);
   }

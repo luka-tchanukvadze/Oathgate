@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ConflictException,
   ForbiddenException,
   Get,
   Headers,
@@ -14,7 +15,7 @@ import {
 import type { AuthenticatedSession } from '../auth/auth.types';
 import { CurrentSession } from '../auth/decorators/current-session.decorator';
 import { SessionGuard } from '../auth/guards/session.guard';
-import { KeyMode, SettlementService } from '@app/shared';
+import { KeyMode, PaymentStatus, SettlementService } from '@app/shared';
 import { toLedgerEntryResponse } from '../ledger/ledger.response';
 import { toDeliveryResponse } from '../webhooks/log/delivery.response';
 import { requireIdempotencyKey } from '../idempotency/idempotency-key';
@@ -23,6 +24,7 @@ import { hashRequest } from '../idempotency/request-hash';
 import { DashboardCreatePaymentDto } from './dto/dashboard-create-payment.dto';
 import { DashboardListPaymentsDto } from './dto/dashboard-list-payments.dto';
 import { ModeQueryDto } from './dto/mode-query.dto';
+import { ReversePaymentDto } from './dto/reverse-payment.dto';
 import { toChainTxResponse } from './chain-tx.response';
 import { PaymentDetailService } from './payment-detail.service';
 import { toPaymentResponse } from './payment.response';
@@ -117,6 +119,34 @@ export class DashboardPaymentsController {
     await this.payments.get(session.merchantId, query.mode, id);
 
     const { payment } = await this.settlement.settle(session.merchantId, id);
+
+    return toPaymentResponse(payment);
+  }
+
+  // Not fenced to test mode, unlike confirm
+  // Confirm pretends the chain did something, a refund is a real decision a
+  // merchant makes about real money
+  @Post(':id/reverse')
+  @HttpCode(200)
+  async reverse(
+    @CurrentSession() session: AuthenticatedSession,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: ModeQueryDto,
+    @Body() dto: ReversePaymentDto,
+  ) {
+    await this.payments.get(session.merchantId, query.mode, id);
+
+    const { payment, reversed } = await this.settlement.reverse(
+      session.merchantId,
+      id,
+      dto.reason,
+    );
+
+    if (!reversed && payment.status !== PaymentStatus.REVERSED) {
+      throw new ConflictException(
+        `only a paid payment can be reversed, this one is ${payment.status}`,
+      );
+    }
 
     return toPaymentResponse(payment);
   }

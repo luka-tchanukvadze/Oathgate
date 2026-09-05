@@ -85,13 +85,20 @@ export async function simulatePayment(
   );
 }
 
-export async function reversePayment(paymentId: string): Promise<void> {
+// The reason travels into the payment.reversed webhook, so whoever integrated
+// against this finds out why the money went back without having to ask
+export async function reversePayment(
+  paymentId: string,
+  mode: KeyMode,
+  reason: string,
+): Promise<void> {
   if (USING_MOCK) {
     mock.reversePayment(paymentId);
     return delay(undefined, 320);
   }
 
-  // The worker reverses a payment when the chain reorganises. Asking for one on
-  // demand is a separate endpoint and it is not built yet
-  throw new Error('Reversing on demand is not available against the live API yet');
+  await http<Payment>(
+    `/api/dashboard/payments/${paymentId}/reverse${query({ mode })}`,
+    { method: 'POST', body: JSON.stringify({ reason }) },
+  );
 }
