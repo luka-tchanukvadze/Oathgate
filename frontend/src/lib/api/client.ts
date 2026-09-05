@@ -42,3 +42,29 @@ export async function http<T>(path: string, init: RequestInit = {}): Promise<T> 
 
   return response.status === 204 ? (undefined as T) : ((await response.json()) as T);
 }
+
+// Undefined values are dropped rather than sent as the string "undefined",
+// which is what a template literal would have done
+export function query(params: Record<string, string | number | undefined>): string {
+  const search = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined) search.set(key, String(value));
+  }
+
+  const encoded = search.toString();
+  return encoded ? `?${encoded}` : '';
+}
+
+// Every list route answers with the rows and whether there are more of them
+//
+// The screens want an array, so the envelope is opened here. Not in http,
+// which is transport and has no idea which routes paginate, and not in a
+// component, which should never learn the shape of the wire at all
+export async function page<T>(
+  path: string,
+  params: Record<string, string | number | undefined>,
+): Promise<T[]> {
+  const body = await http<{ data: T[]; hasMore: boolean }>(`${path}${query(params)}`);
+  return body.data;
+}

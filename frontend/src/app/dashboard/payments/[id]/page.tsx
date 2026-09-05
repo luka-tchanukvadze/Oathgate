@@ -37,7 +37,7 @@ export default function PaymentDetailPage({ params }: { params: Promise<{ id: st
 
   const detail = useQuery({
     queryKey: queryKeys.paymentDetail(id),
-    queryFn: () => getPaymentDetail(id),
+    queryFn: () => getPaymentDetail(id, mode),
     // A confirming payment changes underneath us, so this polls. Polling beats
     // websockets here: it is three lines, it survives a dropped connection, and
     // nothing on this screen needs sub-second latency
@@ -56,7 +56,7 @@ export default function PaymentDetailPage({ params }: { params: Promise<{ id: st
   }
 
   const simulate = useMutation({
-    mutationFn: () => simulatePayment(id),
+    mutationFn: () => simulatePayment(id, mode),
     onSuccess: () => {
       invalidate();
       toast.success('Simulating the customer paying', 'Confirmations arrive over the next few seconds');

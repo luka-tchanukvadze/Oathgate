@@ -1,22 +1,23 @@
-import { delay, http, USING_MOCK } from './client';
+import { delay, http, page, USING_MOCK } from './client';
 import { mock } from '@/lib/mock/store';
-import type {
-  KeyMode,
-  WebhookDelivery,
-  WebhookDeliveryDetail,
-} from '@/types';
+import type { KeyMode, WebhookDelivery, WebhookDeliveryDetail } from '@/types';
 
 export async function listWebhooks(mode: KeyMode): Promise<WebhookDelivery[]> {
   if (USING_MOCK) return delay(mock.webhooks(mode));
-  return http<WebhookDelivery[]>(`/v1/webhooks?mode=${mode.toLowerCase()}`);
+  return page<WebhookDelivery>('/api/dashboard/webhook-deliveries', { mode });
 }
 
+// 202 back, not 200. The row is queued when this returns, not delivered
 export async function replayWebhook(deliveryId: string): Promise<void> {
   if (USING_MOCK) {
     mock.replayWebhook(deliveryId);
     return delay(undefined, 300);
   }
-  return http<void>(`/v1/webhooks/${deliveryId}/replay`, { method: 'POST' });
+
+  await http<WebhookDelivery>(
+    `/api/dashboard/webhook-deliveries/${deliveryId}/replay`,
+    { method: 'POST' },
+  );
 }
 
 // The list never carries the payload, because it is the one field that can be

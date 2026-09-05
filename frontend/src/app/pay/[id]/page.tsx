@@ -17,6 +17,12 @@ import { MIN_CONFIRMATIONS } from '@/lib/constants';
 // The page a shopper sees. Not the merchant dashboard, so no navigation, no
 // mode switch, and nothing on it needs an account
 
+// A customer has no session and no mode toggle, so this page cannot ask the
+// dashboard routes anything. It needs a public endpoint that takes the payment
+// id alone, and that endpoint is not built yet, so this holds the mock working
+// and will change when it lands
+const CHECKOUT_MODE = 'TEST' as const;
+
 export default function CheckoutPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const queryClient = useQueryClient();
@@ -24,7 +30,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
 
   const detail = useQuery({
     queryKey: queryKeys.paymentDetail(id),
-    queryFn: () => getPaymentDetail(id),
+    queryFn: () => getPaymentDetail(id, CHECKOUT_MODE),
     refetchInterval: (query) => {
       const status = query.state.data?.payment.status;
       return status === 'PENDING' || status === 'CONFIRMING' ? 1500 : false;
@@ -32,7 +38,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
   });
 
   const simulate = useMutation({
-    mutationFn: () => simulatePayment(id),
+    mutationFn: () => simulatePayment(id, CHECKOUT_MODE),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.paymentDetail(id) }),
   });
 
