@@ -110,15 +110,25 @@ export function LedgerTable({ entries, loading }: { entries: LedgerEntry[]; load
               ))}
             </div>
 
+            {/* A merchant is shown their own side of a pair and nothing else
+                The matching entry is on the gateway's account, which carries no
+                merchant id, so the query that fetches this cannot return it and
+                the pair can only be checked from the inside
+                Claiming the two sides sum to zero here would be claiming
+                something this screen has no way to see */}
             <p
               className={cn(
                 'mt-2 text-xs',
-                balanced ? 'text-ink-subtle' : 'font-medium text-[var(--bad-fg)]',
+                group.length === 1 || balanced
+                  ? 'text-ink-subtle'
+                  : 'font-medium text-[var(--bad-fg)]',
               )}
             >
-              {balanced
-                ? 'Credits and debits sum to zero, so no money was created or destroyed'
-                : 'This transfer does not sum to zero, which is a bug'}
+              {group.length === 1
+                ? 'Your side of the pair. The matching entry is on the gateway account, which no merchant can read'
+                : balanced
+                  ? 'Credits and debits sum to zero, so no money was created or destroyed'
+                  : 'This transfer does not sum to zero, which is a bug'}
             </p>
           </div>
         );

@@ -47,6 +47,23 @@ const STATUS_LABEL: Record<PaymentStatus, string> = {
   FAILED: 'Failed',
 };
 
+// Two currencies do not add up
+//
+// 1050 GEL and 1050 EUR are both the integer 1050, so summing them produces a
+// number that means nothing and a label that is wrong for half of it. Every
+// money figure on this page is therefore scoped to one currency, and it is the
+// one the merchant actually uses. Counts stay across all of them, because a
+// count of payments is a count either way
+function dominantCurrency(payments: Payment[]): string {
+  const counts = new Map<string, number>();
+
+  for (const payment of payments) {
+    counts.set(payment.fiatCurrency, (counts.get(payment.fiatCurrency) ?? 0) + 1);
+  }
+
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'GEL';
+}
+
 // Daily settled volume, still in minor units. The chart is the only thing that
 // ever turns these into a float, and it does it at the last possible moment
 function dailyVolume(payments: Payment[]): VolumePoint[] {
@@ -89,18 +106,24 @@ export default function HomePage() {
       return at >= previousStart && at < windowStart;
     });
 
+    const currency = dominantCurrency(inWindow);
+
     const settled = inWindow.filter((p) => p.status === 'PAID');
     const settledPrevious = inPrevious.filter((p) => p.status === 'PAID');
 
+    // The counts above are every currency, the money below is one of them
+    const inCurrency = settled.filter((p) => p.fiatCurrency === currency);
+    const previousInCurrency = settledPrevious.filter((p) => p.fiatCurrency === currency);
+
     // Summed in BigInt. A dashboard total that drifts by a cent is the same bug
     // as a ledger that drifts by a cent
-    const gross = sumMinor(settled.map((p) => p.fiatAmount));
-    const previous = sumMinor(settledPrevious.map((p) => p.fiatAmount));
+    const gross = sumMinor(inCurrency.map((p) => p.fiatAmount));
+    const previous = sumMinor(previousInCurrency.map((p) => p.fiatAmount));
 
     const delta =
       BigInt(previous) === 0n ? null : Number(((BigInt(gross) - BigInt(previous)) * 100n) / BigInt(previous));
 
-    const volume = dailyVolume(rows);
+    const volume = dailyVolume(rows.filter((p) => p.fiatCurrency === currency));
 
     const counts = new Map<PaymentStatus, number>();
     for (const payment of inWindow) counts.set(payment.status, (counts.get(payment.status) ?? 0) + 1);
@@ -110,6 +133,7 @@ export default function HomePage() {
       .sort((a, b) => b.count - a.count);
 
     return {
+      currency,
       gross,
       previous,
       delta,
@@ -120,9 +144,10 @@ export default function HomePage() {
       volume,
       windowTotal: sumMinor(volume.map((point) => point.minor)),
       averagePayment:
-        settled.length === 0
+        inCurrency.length === 0
           ? '0'
-          : (BigInt(sumMinor(settled.map((p) => p.fiatAmount))) / BigInt(settled.length)).toString(),
+          : (BigInt(gross) / BigInt(inCurrency.length)).toString(),
+      averageCount: inCurrency.length,
       needsAttention: {
         underpaid: inWindow.filter((p) => p.status === 'UNDERPAID'),
         failed: inWindow.filter((p) => p.status === 'FAILED'),
@@ -133,7 +158,9 @@ export default function HomePage() {
     };
   }, [rows]);
 
-  const balance = accounts.data?.[0]?.balance ?? '0';
+  const account = accounts.data?.[0] ?? null;
+  const balance = account?.balance ?? '0';
+  const balanceCurrency = account?.currency ?? 'BTC';
   const recent = rows.slice(0, 7);
 
   // Only states that a merchant could actually do something about. A count with
@@ -196,11 +223,11 @@ export default function HomePage() {
           label="Gross volume"
           value={
             <>
-              {formatFiat(stats.gross, 'GEL')}
-              <span className="ml-1 text-sm font-medium text-ink-faint">GEL</span>
+              {formatFiat(stats.gross, stats.currency)}
+              <span className="ml-1 text-sm font-medium text-ink-faint">{stats.currency}</span>
             </>
           }
-          previous={`${formatFiat(stats.previous, 'GEL')} previous 14 days`}
+          previous={`${formatFiat(stats.previous, stats.currency)} previous 14 days`}
           delta={stats.delta}
           loading={loading}
         />
@@ -209,8 +236,8 @@ export default function HomePage() {
           label="Balance"
           value={
             <>
-              {formatCrypto(balance, 'BTC')}
-              <span className="ml-1 text-sm font-medium text-ink-faint">BTC</span>
+              {formatCrypto(balance, balanceCurrency)}
+              <span className="ml-1 text-sm font-medium text-ink-faint">{balanceCurrency}</span>
             </>
           }
           previous="All time, rebuilt from ledger entries"
@@ -244,17 +271,17 @@ export default function HomePage() {
             ) : (
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <p className="num text-2xl font-semibold tracking-tight text-ink">
-                  {formatFiat(stats.averagePayment, 'GEL')}
-                  <span className="ml-1.5 text-sm font-medium text-ink-subtle">GEL average</span>
+                  {formatFiat(stats.averagePayment, stats.currency)}
+                  <span className="ml-1.5 text-sm font-medium text-ink-subtle">{stats.currency} average</span>
                 </p>
                 <p className="text-xs text-ink-subtle">
-                  across {stats.settledCount} settled payments
+                  across {stats.averageCount} settled payments
                 </p>
               </div>
             )}
 
             <div className="mt-3">
-              {loading ? <Skeleton className="h-55 w-full" /> : <VolumeChart data={stats.volume} currency="GEL" />}
+              {loading ? <Skeleton className="h-55 w-full" /> : <VolumeChart data={stats.volume} currency={stats.currency} />}
             </div>
           </PanelBody>
         </Panel>
@@ -320,7 +347,7 @@ export default function HomePage() {
                       {payment.reference ?? '—'}
                     </span>
                     <span className="mono hidden shrink-0 text-xs text-ink-faint lg:block">
-                      {formatCrypto(payment.cryptoAmount, payment.cryptoCurrency)} BTC
+                      {formatCrypto(payment.cryptoAmount, payment.cryptoCurrency)} {payment.cryptoCurrency}
                     </span>
                     <span className="w-14 shrink-0 text-right text-xs text-ink-faint">
                       {formatRelative(payment.createdAt)}

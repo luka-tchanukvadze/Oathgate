@@ -17,7 +17,15 @@ export default function BalancePage() {
   const ledger = useQuery({ queryKey: queryKeys.ledger(mode), queryFn: () => listLedger(mode) });
 
   const entries = ledger.data ?? [];
-  const merchantEntries = entries.filter((e) => e.accountId === 'acct_merchant_btc');
+
+  // Both numbers have to be about the same account, or the comparison means
+  // nothing. Entries are matched on the account's real id rather than its kind,
+  // because a merchant settling in two currencies has one balance row per
+  // currency and summing across them would invent a drift that is not there
+  const account = accounts.data?.[0] ?? null;
+  const merchantEntries = account
+    ? entries.filter((entry) => entry.accountId === account.id)
+    : [];
 
   // Recomputed here from the entries rather than read off the account, so the
   // page proves the point it is making instead of just claiming it
@@ -25,7 +33,8 @@ export default function BalancePage() {
   const debits = sumMinor(merchantEntries.filter((e) => e.direction === 'DEBIT').map((e) => e.amount));
   const derived = (BigInt(credits) - BigInt(debits)).toString();
 
-  const stored = accounts.data?.[0]?.balance ?? '0';
+  const stored = account?.balance ?? '0';
+  const currency = account?.currency ?? 'BTC';
   const matches = derived === stored;
 
   return (
@@ -42,13 +51,13 @@ export default function BalancePage() {
       <div className="grid gap-3 sm:grid-cols-3">
         <Stat
           label="Stored balance"
-          value={`${formatCrypto(stored, 'BTC')} BTC`}
+          value={`${formatCrypto(stored, currency)} ${currency}`}
           previous="What the account row says"
           loading={accounts.isLoading}
         />
         <Stat
           label="Rebuilt from entries"
-          value={`${formatCrypto(derived, 'BTC')} BTC`}
+          value={`${formatCrypto(derived, currency)} ${currency}`}
           previous="Credits minus debits, summed in BigInt"
           loading={ledger.isLoading}
         />

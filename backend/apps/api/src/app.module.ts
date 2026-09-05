@@ -7,6 +7,7 @@ import { AppService } from './app.service';
 import { ApiKeysModule } from './api-keys/api-keys.module';
 import { AuthModule } from './auth/auth.module';
 import { CheckoutModule } from './checkout/checkout.module';
+import { DashboardLedgerModule } from './ledger/ledger.module';
 import { OriginGuard } from './auth/guards/origin.guard';
 import { PrismaModule, QueueModule } from '@app/shared';
 import { MerchantsModule } from './merchants/merchants.module';
@@ -26,6 +27,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     ApiKeysModule,
     MerchantsModule,
     CheckoutModule,
+    DashboardLedgerModule,
     PingModule,
     RatesModule,
     PaymentsModule,
