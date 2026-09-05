@@ -213,5 +213,5 @@ before anything is written to the database.
 Bitcoin first. The ledger and the payment states do not care which blockchain it
 is, but only one is connected.
 
-This is a portfolio project. It is built to the standard I would want in
-production, and it has not carried production traffic.
+Oathgate is built to the standard I would want in production, and it has not
+carried production traffic.

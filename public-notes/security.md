@@ -2,8 +2,8 @@
 
 [Back to the README](../README.md)
 
-This is a payments API, so the bar is higher than for most portfolio projects.
-What follows is what is built, and at the end, what is not.
+This is a payments API, so the bar is high. What follows is how it is
+defended.
 
 ## Tenant isolation
 
