@@ -9,5 +9,8 @@ export function toMerchantResponse(merchant: Merchant) {
     email: merchant.email,
     name: merchant.name,
     settlementCurrency: merchant.settlementCurrency,
+    isDemo: merchant.isDemo,
+    // Null on a real merchant, so the dashboard has one thing to check
+    expiresAt: merchant.expiresAt?.toISOString() ?? null,
   };
 }

@@ -181,6 +181,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   <AccountMenu
                     name={merchant?.name ?? 'Merchant'}
                     email={merchant?.email ?? ''}
+                    expiresAt={merchant?.isDemo ? merchant.expiresAt : null}
                   />
                 </div>
               </div>

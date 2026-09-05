@@ -4,8 +4,14 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, LogOut } from 'lucide-react';
+import { ChevronDown, Clock, LogOut } from 'lucide-react';
 import { logout } from '@/lib/api/auth';
+
+// Rounded down, so twenty three and a half hours reads as 23 rather than as a
+// day that is already partly spent
+function hoursLeft(expiresAt: string): number {
+  return Math.max(0, Math.floor((Date.parse(expiresAt) - Date.now()) / 3_600_000));
+}
 
 function initials(name: string): string {
   return name
@@ -16,7 +22,15 @@ function initials(name: string): string {
     .join('');
 }
 
-export function AccountMenu({ name, email }: { name: string; email: string }) {
+export function AccountMenu({
+  name,
+  email,
+  expiresAt,
+}: {
+  name: string;
+  email: string;
+  expiresAt: string | null;
+}) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -87,6 +101,19 @@ export function AccountMenu({ name, email }: { name: string; email: string }) {
             <p className="truncate text-xs font-medium text-ink">{name}</p>
             <p className="truncate text-2xs text-ink-subtle">{email}</p>
           </div>
+
+          {/* Nothing else on any screen says this workspace has an end
+              Somebody who bookmarks a payment and comes back tomorrow deserves
+              to have been told once */}
+          {expiresAt && (
+            <div className="flex items-start gap-2 border-b border-line px-3 py-2 text-2xs text-ink-subtle">
+              <Clock className="mt-px size-3 shrink-0" aria-hidden />
+              <span>
+                Sandbox workspace. It stops working in {hoursLeft(expiresAt)} hours, and
+                nothing in it is yours to keep.
+              </span>
+            </div>
+          )}
 
           <Link
             href="/dashboard/guide"

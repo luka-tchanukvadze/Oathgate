@@ -107,6 +107,8 @@ const MERCHANT: Merchant = {
   email: 'demo@oathgate.dev',
   name: 'Demo Coffee Co',
   settlementCurrency: 'GEL',
+  isDemo: false,
+  expiresAt: null,
 };
 
 const REFERENCES = [

@@ -137,6 +137,9 @@ export interface Merchant {
   email: string;
   name: string;
   settlementCurrency: string;
+  // A sandbox handed out from the landing page, and the moment it stops working
+  isDemo: boolean;
+  expiresAt: string | null;
 }
 
 export interface ApiKey {
