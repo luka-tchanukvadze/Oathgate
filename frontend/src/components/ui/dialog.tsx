@@ -24,6 +24,16 @@ export function Dialog({
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  // Callers pass onClose inline, so it is a new function on every render of the
+  // page behind this. Holding it in a ref keeps it out of the effect's
+  // dependencies, and the effect then runs when the dialog opens rather than
+  // once per keystroke
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   const trap = useCallback((event: KeyboardEvent) => {
     if (event.key !== 'Tab' || !panelRef.current) return;
@@ -57,7 +67,7 @@ export function Dialog({
 
     function onKey(event: KeyboardEvent) {
       if (event.key === 'Escape') {
-        onClose();
+        onCloseRef.current();
         return;
       }
       trap(event);
@@ -67,15 +77,18 @@ export function Dialog({
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
-    const firstField = panelRef.current?.querySelector<HTMLElement>(FOCUSABLE);
-    firstField?.focus();
+    // The first thing worth typing in, not the first thing that can take focus
+    // Close is a button and sits above the form, so asking for any focusable
+    // hands it the caret
+    const items = Array.from(panelRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []);
+    (items.find((element) => element !== closeRef.current) ?? items[0])?.focus();
 
     return () => {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = previousOverflow;
       returnFocusRef.current?.focus?.();
     };
-  }, [open, onClose, trap]);
+  }, [open, trap]);
 
   if (!open) return null;
 
@@ -98,6 +111,7 @@ export function Dialog({
             {description && <p className="mt-1 text-sm text-ink-subtle">{description}</p>}
           </div>
           <button
+            ref={closeRef}
             type="button"
             onClick={onClose}
             aria-label="Close"

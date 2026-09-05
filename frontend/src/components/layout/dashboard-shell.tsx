@@ -31,6 +31,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [scrolled, setScrolled] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 4);
@@ -138,12 +139,27 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                     aria-hidden
                   />
                   <input
+                    ref={searchRef}
                     value={term}
                     onChange={(e) => setTerm(e.target.value)}
                     placeholder="Search payments, references, addresses"
                     aria-label="Search"
-                    className="h-10 w-full rounded-full bg-surface-muted pl-10 pr-4 text-sm text-ink placeholder:text-ink-faint focus:bg-surface focus:shadow-card focus:outline-none"
+                    className="h-10 w-full rounded-full bg-surface-muted pl-10 pr-10 text-sm text-ink outline-none ring-accent/45 placeholder:text-ink-faint focus:bg-surface focus:ring-2"
                   />
+
+                  {term && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTerm('');
+                        searchRef.current?.focus();
+                      }}
+                      aria-label="Clear search"
+                      className="absolute right-1.5 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-full text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
+                    >
+                      <X className="size-3.5" aria-hidden />
+                    </button>
+                  )}
                 </div>
               </form>
 

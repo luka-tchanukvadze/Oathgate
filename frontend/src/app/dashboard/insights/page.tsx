@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { RefreshCw, Sparkles } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Panel, PanelBody, PanelHeader, PanelTitle } from '@/components/ui/panel';
+import { CodeBlock } from '@/components/ui/code-block';
 import { Button } from '@/components/ui/button';
 import { ErrorState } from '@/components/ui/error-state';
 import { getInsights, listPayments, queryKeys } from '@/lib/api';
@@ -115,9 +116,9 @@ export default function InsightsPage() {
           <span className="text-xs text-ink-faint">Counts and timings only</span>
         </PanelHeader>
         <PanelBody>
-          <pre className="scrollbar-thin overflow-x-auto rounded-well bg-surface-muted p-3.5 text-xs leading-relaxed">
-            <code className="mono text-ink-muted">{JSON.stringify(context, null, 2)}</code>
-          </pre>
+          <div className="rounded-well bg-surface-muted p-3.5">
+            <CodeBlock code={JSON.stringify(context, null, 2)} className="text-ink-muted" />
+          </div>
           <p className="mt-3 text-xs text-ink-subtle">
             Derived from {context.payments_total} payments. No API key, wallet address or customer detail is
             involved, and every number here can be checked against the tables on the other screens because

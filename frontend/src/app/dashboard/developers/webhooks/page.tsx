@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, RotateCcw } from 'lucide-react';
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/card';
+import { CodeBlock } from '@/components/ui/code-block';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
 import { Field, Input } from '@/components/ui/field';
@@ -228,9 +229,9 @@ export default function WebhooksPage() {
 
             <div>
               <p className="mb-1.5 text-xs font-medium text-ink">Verifying a delivery</p>
-              <pre className="scrollbar-thin overflow-x-auto rounded-well bg-surface-muted p-3 text-2xs leading-relaxed">
-                <code className="mono text-ink-muted">{VERIFY}</code>
-              </pre>
+              <div className="rounded-well bg-surface-muted p-3">
+                <CodeBlock code={VERIFY} className="text-2xs text-ink-muted" />
+              </div>
               <p className="mt-2 text-xs text-ink-subtle">
                 The timestamp is inside the signed string, not beside it. That is what stops someone
                 replaying a captured request an hour later with a still-valid signature.

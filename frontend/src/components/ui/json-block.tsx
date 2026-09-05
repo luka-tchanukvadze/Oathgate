@@ -1,6 +1,7 @@
 'use client';
 
 import { CopyButton } from './copy-button';
+import { CodeBlock } from './code-block';
 
 // Stripe puts the raw object next to every screen, which is the single cheapest
 // thing I can do for a backend reviewer. This renders as text, never as HTML,
@@ -13,9 +14,9 @@ export function JsonBlock({ value, title }: { value: unknown; title?: string }) 
         <span className="text-xs font-medium text-ink-subtle">{title ?? 'Raw JSON'}</span>
         <CopyButton value={text} />
       </div>
-      <pre className="scrollbar-thin max-h-80 overflow-auto px-3 py-3 text-xs leading-relaxed">
-        <code className="mono text-ink">{text}</code>
-      </pre>
+      <div className="scrollbar-thin max-h-80 overflow-y-auto px-3 py-3">
+        <CodeBlock code={text} className="text-ink" />
+      </div>
     </div>
   );
 }

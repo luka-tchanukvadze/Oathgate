@@ -16,9 +16,13 @@ const ModeContext = createContext<ModeContextValue | null>(null);
 export function ModeProvider({ children }: { children: React.ReactNode }) {
   const [mode, setModeState] = useState<KeyMode>('TEST');
 
+  // Mainnet is not activated, so LIVE is not a state this app can be in
+  // A stored LIVE from a build where the switch still worked would otherwise
+  // create live payments while the header carried on showing Testnet
   useEffect(() => {
     const stored = localStorage.getItem('oathgate-mode');
-    if (stored === 'LIVE' || stored === 'TEST') setModeState(stored);
+    if (stored === 'TEST') return;
+    if (stored) localStorage.removeItem('oathgate-mode');
   }, []);
 
   const setMode = useCallback((next: KeyMode) => {

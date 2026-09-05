@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { CodeBlock } from './code-block';
 
 // Stripe's empty states teach instead of apologising, and the developer-facing
 // ones carry the call that makes them not empty. Costs nothing and it is the
@@ -22,9 +23,9 @@ export function EmptyState({
       {description && <p className="max-w-md text-sm text-ink-subtle">{description}</p>}
       {action && <div className="mt-3">{action}</div>}
       {code && (
-        <pre className="scrollbar-thin mt-5 w-full max-w-xl overflow-x-auto rounded-well bg-surface-muted p-3.5 text-left text-xs leading-relaxed">
-          <code className="mono text-ink-muted">{code}</code>
-        </pre>
+        <div className="mt-5 w-full max-w-xl rounded-well bg-surface-muted p-3.5 text-left">
+          <CodeBlock code={code} className="text-ink-muted" />
+        </div>
       )}
     </div>
   );

@@ -124,10 +124,13 @@
     letter-spacing: -0.015em;
   }
 
+  /* No border-radius here
+     It reads as if it rounds the outline, and it does not: it overwrites the
+     element's own radius, so focusing the pill shaped search box squared it off
+     to 4px. Browsers already follow the element's radius for the outline */
   :focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 1px;
-    border-radius: 4px;
   }
 
   ::selection {
