@@ -95,6 +95,11 @@
 
   html {
     -webkit-text-size-adjust: 100%;
+    /* The gutter is reserved whether or not there is a scrollbar in it
+       Without this a short page is 15px wider than a long one, so moving
+       between them slides the whole layout sideways
+       It also holds the page still when a dialog locks the body */
+    scrollbar-gutter: stable;
   }
 
   body {
