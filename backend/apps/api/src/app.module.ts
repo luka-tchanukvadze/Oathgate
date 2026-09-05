@@ -13,6 +13,7 @@ import { PrismaModule, QueueModule } from '@app/shared';
 import { MerchantsModule } from './merchants/merchants.module';
 import { PaymentsModule } from './payments/payments.module';
 import { PingModule } from './ping/ping.module';
+import { SandboxModule } from './sandbox/sandbox.module';
 import { RatesModule } from './rates/rates.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 
@@ -28,6 +29,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     MerchantsModule,
     CheckoutModule,
     DashboardLedgerModule,
+    SandboxModule,
     PingModule,
     RatesModule,
     PaymentsModule,

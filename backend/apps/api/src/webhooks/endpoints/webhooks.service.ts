@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -24,12 +25,30 @@ export class WebhooksService {
     private readonly cipher: SecretCipher,
   ) {}
 
+  // A sandbox is handed out to anyone who clicks a button on the landing page,
+  // and its endpoint is seeded and fixed. Deliveries, retries and the signature
+  // are all still visible, the address they go to is not the visitor's to set
+  private async assertNotSandbox(merchantId: string): Promise<void> {
+    const merchant = await this.prisma.merchant.findUnique({
+      where: { id: merchantId },
+      select: { isDemo: true },
+    });
+
+    if (merchant?.isDemo) {
+      throw new ForbiddenException(
+        'a sandbox workspace cannot change where its webhooks go',
+      );
+    }
+  }
+
   // The plain secret is returned here and never again, like an API key
   // What goes in the row is the encrypted form
   async create(
     merchantId: string,
     dto: CreateEndpointDto,
   ): Promise<{ endpoint: WebhookEndpoint; secret: string }> {
+    await this.assertNotSandbox(merchantId);
+
     const url = assertDeliverableUrl(dto.url, dto.mode);
     const secret = `whsec_${randomBytes(SECRET_BYTES).toString('base64url')}`;
 
