@@ -285,8 +285,9 @@
 }
 
 .hero-dot {
-  width: 0.4rem;
-  height: 0.4rem;
+  /* Same 6px as the log dots below it, so the two form one column */
+  width: 0.375rem;
+  height: 0.375rem;
   border-radius: 9999px;
   background-color: var(--hero-accent);
   box-shadow: 0 0 0 0 rgba(79, 131, 255, 0.6);

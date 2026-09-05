@@ -89,9 +89,12 @@ export function LiveSettlement() {
       </div>
 
       <div className="rounded-[0.75rem] bg-(--hero-well) px-4 py-3.5 pt-4">
-        <div className="mb-2.5 flex items-center gap-2">
+        <div className="mb-2.5 flex items-center gap-2.5">
           <span className="hero-dot" aria-hidden />
-          <span className="mono text-2xs uppercase tracking-[0.14em] text-(--hero-ink-faint)">
+          {/* leading-none, so the line box is the size of the letters
+              Capitals have nothing below the baseline, so the empty descender
+              space in a normal line box drags a centred dot below the text */}
+          <span className="mono text-2xs uppercase leading-none tracking-[0.14em] text-(--hero-ink-faint)">
             POST /v1/payments
           </span>
         </div>
@@ -124,7 +127,10 @@ export function LiveSettlement() {
             : 'translate-y-1 opacity-0',
         )}
       >
-        <div className="flex items-baseline justify-between gap-3">
+        {/* items-center, not items-baseline
+            The badge is a pill with its own padding, so sitting it on the
+            baseline of a 30px number hangs it off the bottom */}
+        <div className="flex items-center justify-between gap-3">
           <p
             className={cn(
               'num text-3xl font-semibold tracking-tight transition-colors duration-500',
@@ -213,7 +219,10 @@ function LogLine({
   return (
     <li
       className={cn(
-        'flex items-center gap-2.5 text-xs text-(--hero-ink-muted)',
+        // An explicit line height, because half these rows mix the monospace
+        // face into the body one and the taller of the two would otherwise set
+        // the row height and shift the dot against its own text
+        'flex items-center gap-2.5 text-xs leading-5 text-(--hero-ink-muted)',
         show ? 'hero-rise' : 'invisible',
       )}
     >
