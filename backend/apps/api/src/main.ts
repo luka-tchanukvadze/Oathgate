@@ -31,8 +31,12 @@ async function bootstrap() {
 
   // credentials, or the browser never sends the session cookie
   // The origin has to be an explicit list for that to be allowed
+  // Split, so a second origin is a comma rather than one long string nothing
+  // will ever match
   app.enableCors({
-    origin: process.env.DASHBOARD_ORIGIN ?? 'http://localhost:3000',
+    origin: (process.env.DASHBOARD_ORIGIN ?? 'http://localhost:3000')
+      .split(',')
+      .map((origin) => origin.trim()),
     credentials: true,
   });
 
