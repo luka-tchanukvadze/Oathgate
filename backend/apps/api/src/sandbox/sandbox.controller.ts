@@ -17,11 +17,15 @@ export class SandboxController {
     private readonly sessions: SessionService,
   ) {}
 
-  // Three an hour per address. Seeding writes a hundred or so rows, so this is
-  // the most expensive thing an anonymous caller can ask for
+  // Five an hour per address, against the sixty everything else gets
+  // Seeding writes a hundred or so rows, so this is the most expensive thing an
+  // anonymous caller can ask for
+  //
+  // Five rather than one, because a shared office and a phone on the same wifi
+  // are one address, and the second person is not doing anything wrong
   @Post()
   @HttpCode(201)
-  @Throttle({ default: { limit: 3, ttl: 60 * 60_000 } })
+  @Throttle({ default: { limit: 5, ttl: 60 * 60_000 } })
   async create(@Res({ passthrough: true }) response: Response) {
     const { merchantId, expiresAt } = await this.sandbox.create();
 
