@@ -55,6 +55,12 @@ model Merchant {
 
   settlementCurrency String @db.VarChar(10)
 
+  // A sandbox handed to a visitor from the landing page, with no email and no
+  // password. Every one is deleted once it expires, so a stranger's data lives
+  // a day rather than for ever
+  isDemo    Boolean   @default(false)
+  expiresAt DateTime? @db.Timestamptz(3)
+
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
@@ -66,6 +72,8 @@ model Merchant {
   webhookEndpoints  WebhookEndpoint[]
   webhookDeliveries WebhookDelivery[]
 
+  // The sweep looks for expired sandboxes and nothing else
+  @@index([isDemo, expiresAt])
   @@map("merchant")
 }
 

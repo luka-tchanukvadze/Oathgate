@@ -31,8 +31,7 @@ export class CheckoutController {
   // Stands in for the customer's wallet, so somebody without testnet coins can
   // still watch a payment settle
   //
-  // Test mode only, and ten a minute rather than sixty, because this is the
-  // only unauthenticated write in the application
+  // Test mode only, and ten a minute rather than sixty
   @Post(':id/confirm')
   @HttpCode(200)
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
