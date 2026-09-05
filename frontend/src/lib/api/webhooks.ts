@@ -1,10 +1,10 @@
-import { delay, http, page, USING_MOCK } from './client';
+import { delay, http, MAX_PAGE, page, USING_MOCK } from './client';
 import { mock } from '@/lib/mock/store';
 import type { KeyMode, WebhookDelivery, WebhookDeliveryDetail } from '@/types';
 
 export async function listWebhooks(mode: KeyMode): Promise<WebhookDelivery[]> {
   if (USING_MOCK) return delay(mock.webhooks(mode));
-  return page<WebhookDelivery>('/api/dashboard/webhook-deliveries', { mode });
+  return page<WebhookDelivery>('/api/dashboard/webhook-deliveries', { mode, limit: MAX_PAGE.deliveries });
 }
 
 // 202 back, not 200. The row is queued when this returns, not delivered

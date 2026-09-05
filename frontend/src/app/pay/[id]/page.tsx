@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { CopyButton } from '@/components/ui/copy-button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { getPaymentDetail, queryKeys, simulatePayment } from '@/lib/api';
+import { confirmCheckout, getCheckout, queryKeys } from '@/lib/api';
 import { formatCrypto, formatFiat } from '@/lib/format/money';
 import { timeUntil } from '@/lib/format/date';
 import { MIN_CONFIRMATIONS } from '@/lib/constants';
@@ -17,29 +17,25 @@ import { MIN_CONFIRMATIONS } from '@/lib/constants';
 // The page a shopper sees. Not the merchant dashboard, so no navigation, no
 // mode switch, and nothing on it needs an account
 
-// A customer has no session and no mode toggle, so this page cannot ask the
-// dashboard routes anything. It needs a public endpoint that takes the payment
-// id alone, and that endpoint is not built yet, so this holds the mock working
-// and will change when it lands
-const CHECKOUT_MODE = 'TEST' as const;
-
 export default function CheckoutPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const queryClient = useQueryClient();
   const [, forceTick] = useState(0);
 
-  const detail = useQuery({
-    queryKey: queryKeys.paymentDetail(id),
-    queryFn: () => getPaymentDetail(id, CHECKOUT_MODE),
+  // The public route, not a dashboard one. A shopper has no session, and the
+  // response is narrower to match: no mode, no merchant id, no ledger
+  const checkout = useQuery({
+    queryKey: queryKeys.checkout(id),
+    queryFn: () => getCheckout(id),
     refetchInterval: (query) => {
-      const status = query.state.data?.payment.status;
+      const status = query.state.data?.status;
       return status === 'PENDING' || status === 'CONFIRMING' ? 1500 : false;
     },
   });
 
   const simulate = useMutation({
-    mutationFn: () => simulatePayment(id, CHECKOUT_MODE),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.paymentDetail(id) }),
+    mutationFn: () => confirmCheckout(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.checkout(id) }),
   });
 
   // Re-renders once a second purely so the countdown moves. Nothing is fetched
@@ -48,7 +44,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
     return () => clearInterval(timer);
   }, []);
 
-  if (detail.isLoading) {
+  if (checkout.isLoading) {
     return (
       <Shell>
         <Skeleton className="h-72 w-full" />
@@ -56,7 +52,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
     );
   }
 
-  if (!detail.data) {
+  if (!checkout.data) {
     return (
       <Shell>
         <p className="text-center text-sm text-ink-subtle">
@@ -66,9 +62,8 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
     );
   }
 
-  const { payment, chainTxs } = detail.data;
+  const payment = checkout.data;
   const remaining = timeUntil(payment.expiresAt);
-  const confirmations = chainTxs.reduce((max, tx) => Math.max(max, tx.confirmations), 0);
   const settled = payment.status === 'PAID';
 
   // BIP21, which is what a wallet expects when it scans. The amount goes in as
@@ -79,7 +74,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
     <Shell>
       <div className="overflow-hidden rounded-card border border-line bg-surface">
         <div className="border-b border-line px-5 py-4 text-center sm:px-6">
-          <p className="text-xs text-ink-subtle">Demo Coffee Co</p>
+          <p className="text-xs text-ink-subtle">{payment.merchantName}</p>
           <p className="mono mt-1 text-2xl font-semibold tracking-tight text-ink">
             {formatFiat(payment.fiatAmount, payment.fiatCurrency)} {payment.fiatCurrency}
           </p>
@@ -124,7 +119,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
               {payment.status === 'CONFIRMING' ? (
                 <>
                   <StatusBadge status={payment.status} />
-                  <span className="mono text-ink-subtle">{confirmations} of {MIN_CONFIRMATIONS} confirmations</span>
+                  <span className="mono text-ink-subtle">{payment.confirmations} of {MIN_CONFIRMATIONS} confirmations</span>
                 </>
               ) : remaining ? (
                 <>
@@ -138,7 +133,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
               )}
             </div>
 
-            {payment.status === 'PENDING' && (
+            {payment.status === 'PENDING' && payment.canSimulate && (
               <div className="mt-5 border-t border-line pt-5">
                 <Button className="w-full" onClick={() => simulate.mutate()} loading={simulate.isPending}>
                   <PlayCircle className="size-4" aria-hidden />

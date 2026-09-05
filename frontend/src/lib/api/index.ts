@@ -1,5 +1,6 @@
 export * from './client';
 export * from './queryKeys';
+export * from './checkout';
 export * from './payments';
 export * from './ledger';
 export * from './keys';

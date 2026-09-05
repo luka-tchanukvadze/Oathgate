@@ -2,6 +2,7 @@
 // So moving a file in here breaks nothing
 export * from './generated/prisma/client';
 
+export * from './auth/api-key';
 export * from './common/page';
 export * from './events/event-publisher.service';
 export * from './events/events.module';

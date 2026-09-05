@@ -13,9 +13,10 @@ export const queryKeys = {
   webhook: (deliveryId: string) => ['webhook', deliveryId] as const,
   insights: (mode: KeyMode) => ['insights', mode] as const,
   merchant: () => ['merchant'] as const,
+  checkout: (paymentId: string) => ['checkout', paymentId] as const,
 };
 
 export const extraKeys = {
   events: (mode: 'TEST' | 'LIVE') => ['events', mode] as const,
-  endpoint: () => ['webhook-endpoint'] as const,
+  endpoint: (mode: KeyMode) => ['webhook-endpoint', mode] as const,
 };

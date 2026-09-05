@@ -1,4 +1,4 @@
-import { delay, http, page, query, USING_MOCK } from './client';
+import { delay, http, MAX_PAGE, page, query, USING_MOCK } from './client';
 import { mock } from '@/lib/mock/store';
 import type { ChainTx, KeyMode, LedgerEntry, Payment, WebhookDelivery } from '@/types';
 
@@ -15,7 +15,7 @@ export interface PaymentDetail {
 
 export async function listPayments(mode: KeyMode): Promise<Payment[]> {
   if (USING_MOCK) return delay(mock.payments(mode));
-  return page<Payment>('/api/dashboard/payments', { mode });
+  return page<Payment>('/api/dashboard/payments', { mode, limit: MAX_PAGE.payments });
 }
 
 // mode travels with the id, and that is the point of it

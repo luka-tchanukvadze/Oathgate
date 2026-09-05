@@ -185,3 +185,22 @@ export interface SystemEvent {
   at: string;
   meta?: Record<string, unknown>;
 }
+
+// What the public checkout route answers with. A narrower payment: no mode, no
+// merchantId, nothing about the merchant's other business
+export interface Checkout {
+  id: string;
+  status: PaymentStatus;
+  merchantName: string;
+  reference: string | null;
+  fiatAmount: string;
+  fiatCurrency: string;
+  cryptoAmount: string;
+  cryptoCurrency: string;
+  address: string;
+  expiresAt: string;
+  createdAt: string;
+  updatedAt: string;
+  confirmations: number;
+  canSimulate: boolean;
+}

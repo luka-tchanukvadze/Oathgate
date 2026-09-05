@@ -49,7 +49,10 @@ export default function WebhooksPage() {
   const [url, setUrl] = useState('');
   const [urlError, setUrlError] = useState<string | null>(null);
 
-  const endpoint = useQuery({ queryKey: extraKeys.endpoint(), queryFn: getWebhookEndpoint });
+  const endpoint = useQuery({
+    queryKey: extraKeys.endpoint(mode),
+    queryFn: () => getWebhookEndpoint(mode),
+  });
   const deliveries = useQuery({ queryKey: queryKeys.webhooks(mode), queryFn: () => listWebhooks(mode) });
 
   useEffect(() => {
@@ -57,9 +60,9 @@ export default function WebhooksPage() {
   }, [endpoint.data]);
 
   const save = useMutation({
-    mutationFn: updateWebhookEndpoint,
+    mutationFn: (next: string) => updateWebhookEndpoint(next, mode),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: extraKeys.endpoint() });
+      queryClient.invalidateQueries({ queryKey: extraKeys.endpoint(mode) });
       toast.success('Endpoint saved');
     },
     onError: (error) => toast.error('Could not save the endpoint', error.message),

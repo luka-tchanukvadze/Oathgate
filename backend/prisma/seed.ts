@@ -1,5 +1,4 @@
 import 'dotenv/config';
-import { createHash, randomBytes } from 'node:crypto';
 import * as argon2 from 'argon2';
 import { PrismaPg } from '@prisma/adapter-pg';
 import {
@@ -7,6 +6,7 @@ import {
   KeyMode,
   PrismaClient,
 } from '../libs/shared/src/generated/prisma/client';
+import { newApiKey } from '../libs/shared/src/auth/api-key';
 
 // Every step here has to survive a second run
 // A seed that only works on an empty database is one I stop trusting
@@ -32,19 +32,6 @@ function hashPassword(plain: string): Promise<string> {
     timeCost: 2,
     parallelism: 1,
   });
-}
-
-// The plain key is returned once and never stored
-// Only the SHA-256 reaches the table
-// A stolen dump then hands nobody working credentials
-function newApiKey(mode: KeyMode) {
-  const key = `sk_${mode.toLowerCase()}_${randomBytes(24).toString('hex')}`;
-
-  return {
-    key,
-    keyHash: createHash('sha256').update(key).digest('hex'),
-    keyPrefix: key.slice(0, 16),
-  };
 }
 
 async function ensureAccounts(prisma: PrismaClient, merchantId: string) {

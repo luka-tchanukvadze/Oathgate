@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import {
   CanActivate,
   ExecutionContext,
@@ -7,7 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { PrismaService } from '@app/shared';
+import { hashApiKey, PrismaService } from '@app/shared';
 
 // 5 minutes
 // Refreshing lastUsedAt every call doubles writes for a cosmetic column
@@ -39,7 +38,7 @@ export class ApiKeyGuard implements CanActivate {
 
     // Hashed, then looked up
     // Nothing is compared, so there is no string comparison to leak timing
-    const keyHash = createHash('sha256').update(presented).digest('hex');
+    const keyHash = hashApiKey(presented);
 
     const key = await this.prisma.apiKey.findUnique({
       where: { keyHash },

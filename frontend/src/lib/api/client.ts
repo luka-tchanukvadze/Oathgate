@@ -56,6 +56,16 @@ export function query(params: Record<string, string | number | undefined>): stri
   return encoded ? `?${encoded}` : '';
 }
 
+// Every list route defaults to a small page, and the dashboard reads whole
+// windows rather than pages: fourteen days of volume, a balance rebuilt from
+// its entries. A default page would truncate those without saying so
+// These are the API maximums
+export const MAX_PAGE = {
+  payments: 100,
+  ledger: 200,
+  deliveries: 100,
+} as const;
+
 // Every list route answers with the rows and whether there are more of them
 //
 // The screens want an array, so the envelope is opened here. Not in http,
