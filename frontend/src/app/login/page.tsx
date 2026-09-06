@@ -98,9 +98,8 @@ export default function LoginPage() {
 
         <div className="mt-6 text-center">
           <p className="text-xs text-ink-subtle">
-            There is no sign up. A real gateway has to check who a business is
-            before it moves money for them, and that is a legal process rather
-            than a screen. A sandbox behaves the same and takes one click.
+            There is no sign up. The button below gives you the same
+            dashboard and the same API keys.
           </p>
 
           <div className="mt-5 flex justify-center">
