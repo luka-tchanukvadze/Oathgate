@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 // is what the demo actually does
 
 const REQUEST = [
-  'curl -X POST https://api.oathgate.dev/v1/payments \\',
+  'curl -X POST https://oathgate-api.tchanu.com/api/v1/payments \\',
   '  -H "Authorization: Bearer sk_test_..." \\',
   '  -H "Idempotency-Key: 8c1f-4a20" \\',
   "  -d '{\"amount\": 1050, \"currency\": \"GEL\"}'",

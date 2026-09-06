@@ -41,7 +41,7 @@ const RANGES = [
   { value: '30d', label: 'Last 30 days', days: 30 },
 ] as const;
 
-const CURL = `curl -X POST https://api.oathgate.dev/v1/payments \\
+const CURL = `curl -X POST https://oathgate-api.tchanu.com/api/v1/payments \\
   -H "Authorization: Bearer sk_test_..." \\
   -H "Idempotency-Key: $(uuidgen)" \\
   -d '{"amount": 1050, "currency": "GEL"}'`;

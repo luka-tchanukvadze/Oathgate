@@ -10,8 +10,8 @@ event channel, Postgres, Redis, an append-only double-entry ledger, and a
 Next.js merchant dashboard. It runs on a Raspberry Pi behind Cloudflare and
 redeploys itself when I push.
 
-**Live dashboard:** live link here
-**Live API:** https://oathgate.tchanu.com/api
+**Live dashboard:** https://oathgate.tchanu.com
+**Live API:** https://oathgate-api.tchanu.com/api
 
 > Bitcoin **signet** only, which is a test network. No real money moves through
 > this, and the live wallet is not configured on the deployed instance.
@@ -41,7 +41,7 @@ The shop never touches a wallet. Oathgate never knows what a coffee is.
 
 ### 1. The dashboard
 
-**live link here**
+https://oathgate.tchanu.com
 
 Click **Open the demo**. You get your own workspace with a fortnight of payments
 already in it and your own API keys. No signup, nothing to install.
@@ -63,10 +63,10 @@ get in touch and I will set it up.
 You can check that the API is up and that authentication works:
 
 ```bash
-curl https://oathgate.tchanu.com/api
+curl https://oathgate-api.tchanu.com/api
 # Hello World!
 
-curl https://oathgate.tchanu.com/api/v1/ping
+curl https://oathgate-api.tchanu.com/api/v1/ping
 # {"message":"missing api key","error":"Unauthorized","statusCode":401}
 ```
 

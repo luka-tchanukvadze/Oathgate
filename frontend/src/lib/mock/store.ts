@@ -104,7 +104,7 @@ interface MockState {
 
 const MERCHANT: Merchant = {
   id: id('mrc'),
-  email: 'demo@oathgate.dev',
+  email: 'demo@oathgate.invalid',
   name: 'Demo Coffee Co',
   settlementCurrency: 'GEL',
   isDemo: false,

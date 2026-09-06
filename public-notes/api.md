@@ -2,7 +2,7 @@
 
 [Back to the README](../README.md)
 
-Base URL is `https://oathgate.tchanu.com/api` on the deployed instance, or
+Base URL is `https://oathgate-api.tchanu.com/api` on the deployed instance, or
 `http://localhost:5002/api` locally.
 
 Everything the backend serves lives under `/api`. That one prefix is what makes
@@ -35,7 +35,7 @@ There is no `mode` parameter on any of these.
 Confirms a key works.
 
 ```bash
-curl https://oathgate.tchanu.com/api/v1/ping \
+curl https://oathgate-api.tchanu.com/api/v1/ping \
   -H "Authorization: Bearer sk_test_YOUR_KEY"
 ```
 
@@ -67,7 +67,7 @@ What an amount is worth right now, without creating anything.
 Creates a payment. **An `Idempotency-Key` header is required.**
 
 ```bash
-curl -X POST https://oathgate.tchanu.com/api/v1/payments \
+curl -X POST https://oathgate-api.tchanu.com/api/v1/payments \
   -H "Authorization: Bearer sk_test_YOUR_KEY" \
   -H "Idempotency-Key: 8f3a2c1e-0b44-4c7a-9f21-6d5e0a2b7c11" \
   -H "Content-Type: application/json" \
