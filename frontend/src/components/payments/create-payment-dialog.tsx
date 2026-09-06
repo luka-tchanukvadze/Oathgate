@@ -100,11 +100,9 @@ export function CreatePaymentDialog({ open, onClose }: { open: boolean; onClose:
 
         <div className="rounded-well border border-line bg-surface-muted px-3.5 py-3">
           <p className="text-xs text-ink-subtle">Sent to the API as</p>
-          <p className="mono mt-1 text-sm text-ink">
+          <p className="mono mt-1 wrap-anywhere text-sm text-ink">
             {minor ? (
-              <>
-                {`{ "amount": ${minor}, "currency": "${currency}" }`}
-              </>
+              `{ "fiatAmount": "${minor}", "fiatCurrency": "${currency}", "cryptoCurrency": "BTC" }`
             ) : (
               <span className="text-ink-subtle">waiting for a valid amount</span>
             )}
