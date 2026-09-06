@@ -43,7 +43,8 @@ The shop never touches a wallet. Oathgate never knows what a coffee is.
 
 **live link here**
 
-Open it and sign in. Nothing to install.
+Click **Open the demo**. You get your own workspace with a fortnight of payments
+already in it and your own API keys. No signup, nothing to install.
 
 Worth clicking, in this order:
 
@@ -52,6 +53,10 @@ Worth clicking, in this order:
 | Payments, then any row | One payment from start to finish: what arrived on the blockchain, the ledger rows it wrote, and the webhooks it sent |
 | Balance | A balance next to the ledger entries it is calculated from |
 | Developers, then Webhooks | Every delivery attempt, when the next retry is due, and the signature that was sent |
+
+The workspace is yours alone and lasts 24 hours, which is long enough to
+integrate against it from your own code. If you want one that does not expire,
+get in touch and I will set it up.
 
 ### 2. The API
 
@@ -65,8 +70,8 @@ curl https://oathgate.tchanu.com/api/v1/ping
 # {"message":"missing api key","error":"Unauthorized","statusCode":401}
 ```
 
-Creating payments needs a TEST key. I hand those out rather than publish one, so
-open an issue if you want one. Running it locally also prints you a key.
+Creating payments needs an API key. Open the demo above and make one on the
+Developers screen. Running it locally prints one as well.
 
 Every route, with real requests and responses: [api.md](public-notes/api.md).
 
