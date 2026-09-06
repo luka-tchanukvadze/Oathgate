@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, Clock, LogOut } from 'lucide-react';
+import { BookOpen, ChevronDown, Clock, LogOut, Sparkles } from 'lucide-react';
 import { logout } from '@/lib/api/auth';
 
 // Rounded down, so twenty three and a half hours reads as 23 rather than as a
@@ -120,12 +120,25 @@ export function AccountMenu({
             </div>
           )}
 
+          {/* The phone tab bar carries the four main sections and these two do
+              not fit in it, so this is the only way to reach them on a phone */}
+          <Link
+            href="/dashboard/insights"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-ink-muted hover:bg-surface-muted hover:text-ink"
+          >
+            <Sparkles className="size-3.5" aria-hidden />
+            Insights
+          </Link>
+
           <Link
             href="/dashboard/guide"
             role="menuitem"
             onClick={() => setOpen(false)}
-            className="block rounded-lg px-3 py-2 text-xs text-ink-muted hover:bg-surface-muted hover:text-ink"
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-ink-muted hover:bg-surface-muted hover:text-ink"
           >
+            <BookOpen className="size-3.5" aria-hidden />
             Integration guide
           </Link>
 

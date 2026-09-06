@@ -99,25 +99,25 @@ export default function LandingPage() {
       <section className="hero">
         <header className="relative z-10">
           <div className="mx-auto flex h-20 max-w-6xl items-center px-5 sm:px-8">
-            <Logo onDark />
+            <Logo onDark compact />
             <nav className="ml-auto flex items-center gap-1 sm:gap-2">
               {/* Quiet, but it has to be here
                   Every other route into the product creates an account, and a
                   merchant who already has one needs a door that does not */}
               <Link
                 href="/login"
-                className="inline-flex h-10 items-center rounded-full px-4 text-sm font-semibold text-(--hero-ink-muted) transition-colors hover:text-(--hero-ink)"
+                className="inline-flex h-10 shrink-0 items-center whitespace-nowrap rounded-full px-3 text-sm font-semibold text-(--hero-ink-muted) transition-colors hover:text-(--hero-ink) sm:px-4"
               >
                 Sign in
               </Link>
-              <StartSandboxButton className="inline-flex h-10 items-center gap-1.5 rounded-full bg-(--hero-ink) px-5 text-sm font-semibold text-(--hero-bg) transition-transform hover:scale-[1.03] disabled:scale-100 disabled:opacity-70" />
+              <StartSandboxButton className="inline-flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-(--hero-ink) px-4 text-sm font-semibold text-(--hero-bg) transition-transform hover:scale-[1.03] disabled:scale-100 disabled:opacity-70 sm:px-5" />
             </nav>
           </div>
         </header>
 
         <div className="relative z-10 mx-auto max-w-6xl px-5 pb-24 pt-10 sm:px-8 sm:pb-32 sm:pt-16">
           <div className="grid items-center gap-14 lg:grid-cols-[1fr_minmax(0,470px)]">
-            <div className="max-w-2xl">
+            <div className="min-w-0 max-w-2xl">
               <h1 className="text-[2.75rem] font-semibold leading-[1.03] tracking-[-0.035em] text-(--hero-ink) sm:text-6xl lg:text-[4.25rem]">
                 Accept Bitcoin,
                 <br />
@@ -147,7 +147,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div>
+            <div className="min-w-0">
               <LiveSettlement />
               <p className="sr-only">
                 A looping illustration of one payment. A request creates it, the transaction is

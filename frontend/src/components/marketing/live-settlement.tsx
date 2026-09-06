@@ -106,11 +106,11 @@ export function LiveSettlement() {
         <div className="relative">
           <pre
             aria-hidden
-            className="mono invisible whitespace-pre-wrap wrap-break-word text-xs leading-relaxed"
+            className="mono invisible whitespace-pre-wrap wrap-anywhere text-xs leading-relaxed"
           >
             {REQUEST}
           </pre>
-          <pre className="mono absolute inset-0 whitespace-pre-wrap wrap-break-word text-xs leading-relaxed text-(--hero-ink-muted)">
+          <pre className="mono absolute inset-0 whitespace-pre-wrap wrap-anywhere text-xs leading-relaxed text-(--hero-ink-muted)">
             {REQUEST.slice(0, typed)}
             {typed < REQUEST.length && <span className="hero-caret" aria-hidden />}
           </pre>

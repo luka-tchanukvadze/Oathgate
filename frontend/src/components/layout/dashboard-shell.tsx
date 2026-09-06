@@ -1,9 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Menu, Search, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { SidebarNav } from './sidebar';
 import { BottomNav } from './bottom-nav';
@@ -23,14 +23,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     queryKey: queryKeys.merchant(),
     queryFn: getMerchant,
   });
-  const [navOpen, setNavOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [liveInfo, setLiveInfo] = useState(false);
   const [term, setTerm] = useState('');
   const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
-  const drawerRef = useRef<HTMLDivElement>(null);
-  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -41,52 +38,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const closeNav = useCallback(() => {
-    setNavOpen(false);
-    // Focus goes back to the button that opened it, otherwise a keyboard user
-    // is dropped at the top of the document
-    menuButtonRef.current?.focus();
-  }, []);
-
-  // The drawer is a modal, so it behaves like one: Escape closes it, Tab stays
-  // inside it, and focus starts on the close button
-  useEffect(() => {
-    if (!navOpen) return;
-
-    const panel = drawerRef.current;
-    panel?.querySelector<HTMLElement>('button, a[href]')?.focus();
-
-    function onKey(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        closeNav();
-        return;
-      }
-      if (event.key !== 'Tab' || !panel) return;
-
-      const items = Array.from(
-        panel.querySelectorAll<HTMLElement>('a[href], button:not([disabled])'),
-      ).filter((element) => element.offsetParent !== null);
-      if (items.length === 0) return;
-
-      const first = items[0];
-      const last = items[items.length - 1];
-      if (event.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [navOpen, closeNav]);
-
   function search(event: React.FormEvent) {
     event.preventDefault();
     const q = term.trim();
-    setNavOpen(false);
     setSearchOpen(false);
     router.push(q ? `/dashboard/payments?q=${encodeURIComponent(q)}` : '/dashboard/payments');
   }
@@ -118,16 +72,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             />
 
             <div className="relative flex h-18 items-center gap-2 px-4 sm:h-24 sm:gap-3 sm:px-6 lg:px-8">
-              <button
-                ref={menuButtonRef}
-                type="button"
-                onClick={() => setNavOpen(true)}
-                aria-label="Open navigation"
-                className="grid size-10 shrink-0 place-items-center rounded-full text-ink-muted hover:bg-surface-muted lg:hidden"
-              >
-                <Menu className="size-5" aria-hidden />
-              </button>
-
               <div className="min-w-0 lg:hidden">
                 <Logo href="/dashboard" compact />
               </div>
@@ -177,13 +121,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
                 <ModeToggle mode={mode} onLockedClick={() => setLiveInfo(true)} />
 
-                <div className="hidden sm:block">
-                  <AccountMenu
-                    name={merchant?.name ?? 'Merchant'}
-                    email={merchant?.email ?? ''}
-                    expiresAt={merchant?.isDemo ? merchant.expiresAt : null}
-                  />
-                </div>
+                <AccountMenu
+                  name={merchant?.name ?? 'Merchant'}
+                  email={merchant?.email ?? ''}
+                  expiresAt={merchant?.isDemo ? merchant.expiresAt : null}
+                />
               </div>
             </div>
           </header>
@@ -197,31 +139,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <BottomNav />
-
-      {/* Not rendered when closed, so its links cannot be reached by Tab while
-          it is off screen */}
-      {navOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div onClick={closeNav} className="absolute inset-0 bg-[#0a2540]/45" aria-hidden />
-          <div
-            ref={drawerRef}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Navigation"
-            className="absolute inset-y-0 left-0 w-72 bg-canvas"
-          >
-            <button
-              type="button"
-              onClick={closeNav}
-              aria-label="Close navigation"
-              className="absolute right-2 top-2.5 z-10 grid size-9 place-items-center rounded-full text-ink-muted hover:bg-surface-muted"
-            >
-              <X className="size-5" aria-hidden />
-            </button>
-            <SidebarNav onNavigate={closeNav} />
-          </div>
-        </div>
-      )}
 
       <Dialog open={searchOpen} onClose={() => setSearchOpen(false)} title="Search">
         <form onSubmit={search}>
