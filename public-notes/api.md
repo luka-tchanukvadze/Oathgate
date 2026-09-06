@@ -123,6 +123,24 @@ else's payment id is a 404 rather than a payment.
 without waiting for real confirmations. In live mode the chain decides, and this
 route returns 403.
 
+### `POST /api/v1/payments/:id/reverse`
+
+A refund. Takes `{ "reason": "..." }`, between 3 and 200 characters, which
+travels into the `payment.reversed` webhook so the merchant's own server finds
+out why the money went back.
+
+Nothing is deleted. The original ledger pair stays and an opposite pair is
+written next to it, each new entry naming the one it undoes, so the balance
+falls back and the history keeps both halves.
+
+No idempotency key, because a second call is already safe: it finds no entries
+left to undo and changes nothing, answering 200 with the same body as the first.
+Anything that was never paid gets a 409 naming the status it is actually in,
+which is more use than a 200 that quietly did nothing.
+
+Not restricted to test mode. Confirming pretends the chain did something, while
+a refund is a real decision a merchant makes about real money.
+
 ## Dashboard API
 
 All of these need the session cookie and take an explicit `mode` parameter,
@@ -138,6 +156,11 @@ side of it you are on.
 | `GET /api/dashboard/payments/:id?mode=TEST` | The payment, its chain transactions, its ledger rows and its webhooks, in one response |
 | `POST /api/dashboard/payments` | Create. Takes `mode` in the body |
 | `POST /api/dashboard/payments/:id/confirm?mode=TEST` | Test mode only |
+| `POST /api/dashboard/payments/:id/reverse?mode=TEST` | Same as the `/v1` one, taking `reason` in the body |
+| `GET /api/dashboard/me` | The merchant's own profile |
+| `GET /api/dashboard/api-keys` | Both modes at once, prefixes only, never the key itself |
+| `POST /api/dashboard/api-keys` | Create. Returns the full key once and never again |
+| `POST /api/dashboard/api-keys/:id/revoke` | A POST, not a DELETE, because the row survives. Payments made with that key still have an author |
 | `GET /api/dashboard/balances?mode=TEST` | Account balances |
 | `GET /api/dashboard/ledger?mode=TEST` | Ledger entries, filterable by `paymentId` |
 | `GET /api/dashboard/webhook-endpoints?mode=TEST` | Where notifications are sent |
@@ -152,6 +175,28 @@ calls would each read at their own moment, and a settlement landing between two
 of them would put a pending payment on screen next to the ledger rows that
 already paid the merchant. It runs at `REPEATABLE READ` so both of its queries
 see one version of the database.
+
+## No key and no cookie
+
+Three routes need neither, because the people calling them have no account here
+yet. A customer paying a shop never will, and a visitor clicking the demo has
+one made for them by the call itself.
+
+| Route | Does |
+| --- | --- |
+| `GET /api/checkout/:id` | What a customer needs to pay: the amount, the address, the countdown and the status |
+| `POST /api/checkout/:id/confirm` | Test mode only, stands in for the customer's wallet. Ten a minute |
+| `POST /api/dashboard/sandbox` | Creates a throwaway merchant with a fortnight of seeded payments and signs the caller into it |
+
+The sandbox route is what the landing page button calls. It creates the account
+and the session in one request, so the interesting part of the answer is the
+`Set-Cookie` header rather than anything in the body. Five an hour per address,
+against the sixty a minute everything else gets, because seeding writes about a
+hundred rows and it is the most expensive thing an anonymous caller can ask for.
+
+Everything it makes is revoked a day later. Nothing is deleted, because a ledger
+entry is written once and never touched, and that rule does not get an exception
+for tidiness.
 
 ## Conventions
 

@@ -118,6 +118,19 @@ Traffic arrives through a Cloudflare tunnel. The tunnel makes an **outbound**
 connection, so there is no inbound port open and the origin address is never
 exposed.
 
+## The dashboard is not in this image
+
+It is a separate Next.js deployment on its own host, built from the same
+repository. The API is a JSON service and serves no HTML at all.
+
+That split is why the two have different hostnames, and why the API is given
+the dashboard's exact origin rather than a wildcard. The session cookie only
+travels between them because they are subdomains of one registrable domain,
+which is what lets it stay `SameSite=Lax` instead of being loosened.
+
+The build pipeline above only runs when `backend/` changes, since a dashboard
+commit cannot alter the image.
+
 ## Backups
 
 Both databases are dumped nightly, compressed and timestamped, keeping the last
@@ -128,5 +141,5 @@ the story, which is why the notifications database is in there too.
 
 ## Resource limits
 
-Every container has a memory limit. On a small board, one runaway process
+Every container declares a memory limit. On a small board, one runaway process
 otherwise takes the whole machine down.

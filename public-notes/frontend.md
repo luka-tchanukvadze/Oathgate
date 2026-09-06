@@ -57,6 +57,11 @@ decision, and this is one product with one look.
 **A sidebar, not top navigation.** Sections get added to a product like this
 over time, and a sidebar takes a new item without a redesign.
 
+**A phone gets a tab bar instead, not a copy of the sidebar.** Four sections at
+the bottom where a thumb is, and the two that do not fit sit in the account
+menu. A drawer holding the same list the tab bar already shows is the same
+navigation twice.
+
 **Mechanisms get a log line, not a navigation item.** The outbox, the queue,
 idempotency replays and notification sends are all interesting and none of them
 deserve their own page. They show up as entries in one developer log.
@@ -83,8 +88,3 @@ background refresh by hand.
 
 The little client state that exists, which tab you are on and whether a dialog
 is open, is `useState`.
-
-## Status
-
-The screens are built and the real-API branch of every function is written.
-Connecting them to the live backend is in progress.

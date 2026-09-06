@@ -10,8 +10,8 @@ event channel, Postgres, Redis, an append-only double-entry ledger, and a
 Next.js merchant dashboard. It runs on a Raspberry Pi behind Cloudflare and
 redeploys itself when I push.
 
-**Live dashboard:** https://oathgate.tchanu.com
-**Live API:** https://oathgate-api.tchanu.com/api
+- **Live dashboard:** https://oathgate.tchanu.com
+- **Live API:** https://oathgate-api.tchanu.com/api
 
 > Bitcoin **signet** only, which is a test network. No real money moves through
 > this, and the live wallet is not configured on the deployed instance.
