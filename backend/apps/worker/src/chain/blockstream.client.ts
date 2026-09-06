@@ -6,7 +6,10 @@ import type { ChainClient, ChainTransaction } from './chain.types';
 // Generous for a slow explorer, and one address cannot hold up a whole sweep
 const REQUEST_TIMEOUT_MS = 10_000;
 
-const DEFAULT_BASE_URL = 'https://blockstream.info/testnet/api';
+// Signet, matching the network the deployed wallet key belongs to
+// Signet and testnet both hand out tb1q addresses, so pointing at the wrong one
+// costs nothing at boot and then quietly never sees a payment land
+const DEFAULT_BASE_URL = 'https://blockstream.info/signet/api';
 
 // A txid is 32 bytes printed as hex
 const TXID = /^[0-9a-f]{64}$/i;

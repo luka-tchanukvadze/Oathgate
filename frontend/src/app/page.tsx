@@ -142,7 +142,7 @@ export default function LandingPage() {
               </div>
 
               <p className="mt-5 text-xs text-(--hero-ink-faint)">
-                No signup. Testnet coins are free and worth nothing, and the blocks confirming them
+                No signup. Signet coins are free and worth nothing, and the blocks confirming them
                 are real.
               </p>
             </div>
@@ -244,7 +244,7 @@ export default function LandingPage() {
       <footer>
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-8 text-xs text-ink-faint sm:px-8">
           <span>Oathgate by Luka Tchanukvadze</span>
-          <span>Bitcoin testnet only. No real funds move through this.</span>
+          <span>Bitcoin signet only. No real funds move through this.</span>
         </div>
       </footer>
     </div>

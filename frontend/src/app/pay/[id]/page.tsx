@@ -142,7 +142,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
                 {/* The button is the fast path. Saying the slow path exists is
                     what stops someone assuming the whole thing is a mock */}
                 <p className="mt-2 text-center text-xs leading-relaxed text-ink-subtle">
-                  Stands in for a wallet so you can watch this settle now. Sending real testnet coins to
+                  Stands in for a wallet so you can watch this settle now. Sending real signet coins to
                   the address above works too, and takes a few minutes.
                 </p>
               </div>
@@ -152,7 +152,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
       </div>
 
       <p className="mt-4 text-center text-xs text-ink-subtle">
-        Secured by Oathgate. Bitcoin testnet, no real funds.
+        Secured by Oathgate. Bitcoin signet, no real funds.
       </p>
     </Shell>
   );

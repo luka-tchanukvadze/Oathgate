@@ -4,8 +4,8 @@ import { Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { KeyMode } from '@/types';
 
-// Labelled Testnet and Mainnet rather than Test and Live. Card gateways say
-// "test" because their test mode really is fake, but a testnet is a real chain
+// Labelled Signet and Mainnet rather than Test and Live. Card gateways say
+// "test" because their test mode really is fake, but signet is a real chain
 // and calling it test made people assume the whole thing was simulated. The
 // KeyMode enum and the sk_test_ prefixes stay as they are, this is display only
 //
@@ -27,7 +27,7 @@ export function ModeToggle({
       className={cn('inline-flex h-10 items-center rounded-full bg-surface-muted p-1', className)}
     >
       {/* Painted from mode, never hardcoded
-          Hardcoding it meant a stale live mode showed a Testnet pill while every
+          Hardcoding it meant a stale live mode showed a Signet pill while every
           record it wrote said LIVE, which is the display disagreeing with the
           books */}
       <span
@@ -38,7 +38,7 @@ export function ModeToggle({
             : { color: 'var(--ink-faint)' }
         }
       >
-        Testnet
+        Signet
       </span>
 
       <button

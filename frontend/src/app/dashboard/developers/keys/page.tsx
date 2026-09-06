@@ -147,9 +147,9 @@ export default function ApiKeysPage() {
           {/* Mainnet is shown and disabled rather than hidden, so the two
               environments are still visible in the product without offering a
               key this workspace cannot issue */}
-          <Field label="Environment" hint="Testnet keys can only ever touch testnet data.">
+          <Field label="Environment" hint="Signet keys can only ever touch signet data.">
             <Select value={mode} onChange={(e) => setKeyMode(e.target.value as KeyMode)}>
-              <option value="TEST">Testnet</option>
+              <option value="TEST">Signet</option>
               <option value="LIVE" disabled>
                 Mainnet, not activated
               </option>

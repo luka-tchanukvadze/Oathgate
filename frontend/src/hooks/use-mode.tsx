@@ -18,7 +18,7 @@ export function ModeProvider({ children }: { children: React.ReactNode }) {
 
   // Mainnet is not activated, so LIVE is not a state this app can be in
   // A stored LIVE from a build where the switch still worked would otherwise
-  // create live payments while the header carried on showing Testnet
+  // create live payments while the header carried on showing Signet
   useEffect(() => {
     const stored = localStorage.getItem('oathgate-mode');
     if (stored === 'TEST') return;

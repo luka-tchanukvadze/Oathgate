@@ -301,7 +301,7 @@ function buildSeed(): MockState {
     });
   }
 
-  // All testnet, because mainnet is not activated for this workspace. Seeding a
+  // All signet, because mainnet is not activated for this workspace. Seeding a
   // live key while the header says mainnet is unavailable is a contradiction a
   // reviewer notices immediately
   const apiKeys: ApiKey[] = [

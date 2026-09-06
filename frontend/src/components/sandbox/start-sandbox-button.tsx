@@ -7,10 +7,27 @@ import { ArrowRight, Loader2 } from 'lucide-react';
 import { ApiError } from '@/lib/api/client';
 import { getSession } from '@/lib/api/auth';
 import { createSandbox } from '@/lib/api/sandbox';
+import { useToast } from '@/components/ui/toast';
 
-const RATE_LIMITED = 'A few sandboxes came from here already. Try in an hour.';
+// The API's own words, not a house sentence covering everything
+// "no usable exchange rate" says where to go and look, "try again" does not
+function describe(error: unknown): { title: string; detail: string } {
+  if (error instanceof ApiError) {
+    if (error.status === 429) {
+      return {
+        title: 'A few sandboxes came from this address already',
+        detail: 'Try again in an hour, or sign in if you have an account',
+      };
+    }
 
-const FAILED = 'Could not open a sandbox just now. Try again.';
+    return { title: 'Could not open a sandbox', detail: error.message };
+  }
+
+  return {
+    title: 'Could not reach the API',
+    detail: 'Nothing answered, so it is either down or not reachable from here',
+  };
+}
 
 // One click has to end with a stranger inside a dashboard that has data in it,
 // so this creates the account, seeds it and signs in before it navigates
@@ -23,14 +40,13 @@ export function StartSandboxButton({
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState<string | null>(null);
 
   async function open() {
     if (busy) return;
 
     setBusy(true);
-    setFailed(null);
 
     try {
       // Anyone already signed in keeps the account they signed in to
@@ -49,35 +65,28 @@ export function StartSandboxButton({
       router.push('/dashboard');
     } catch (error) {
       setBusy(false);
-      setFailed(error instanceof ApiError && error.status === 429 ? RATE_LIMITED : FAILED);
+
+      // A toast rather than a line under the button
+      // This button sits in a header, in a hero and on the login card, and a
+      // box that appears in the flow moves whichever one it lands in
+      const { title, detail } = describe(error);
+      toast.error(title, detail);
     }
   }
 
   return (
-    <span className="inline-flex flex-col items-start gap-2">
-      <button type="button" onClick={open} disabled={busy} className={className}>
-        {busy ? (
-          <>
-            Setting up your workspace
-            <Loader2 className="size-4 animate-spin" aria-hidden />
-          </>
-        ) : (
-          <>
-            {label}
-            <ArrowRight className="size-4" aria-hidden />
-          </>
-        )}
-      </button>
-
-      {failed && (
-        <span
-          role="alert"
-          className="max-w-3xs rounded-well px-3 py-2 text-xs leading-snug"
-          style={{ backgroundColor: 'var(--bad-bg)', color: 'var(--bad-fg)' }}
-        >
-          {failed}
-        </span>
+    <button type="button" onClick={open} disabled={busy} className={className}>
+      {busy ? (
+        <>
+          Setting up your workspace
+          <Loader2 className="size-4 animate-spin" aria-hidden />
+        </>
+      ) : (
+        <>
+          {label}
+          <ArrowRight className="size-4" aria-hidden />
+        </>
       )}
-    </span>
+    </button>
   );
 }

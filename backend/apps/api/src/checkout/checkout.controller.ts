@@ -28,7 +28,7 @@ export class CheckoutController {
     return toCheckoutResponse(payment);
   }
 
-  // Stands in for the customer's wallet, so somebody without testnet coins can
+  // Stands in for the customer's wallet, so somebody without signet coins can
   // still watch a payment settle
   //
   // Test mode only, and ten a minute rather than sixty

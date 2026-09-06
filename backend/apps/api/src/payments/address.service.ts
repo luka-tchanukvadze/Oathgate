@@ -7,15 +7,19 @@ import { HDKey } from '@scure/bip32';
 import { KeyMode } from '@app/shared';
 
 // The four bytes an extended key starts with, which say what it is
-// tpub is the generic testnet one, vpub is testnet native segwit
+// tpub is the generic one, vpub is native segwit
 // A wallet exports whichever it feels like and the key material is the same
+// Signet and testnet share these bytes, so one key works on either and the
+// addresses it derives are identical: the chain I ask about is the only
+// difference, and nothing in a key says which
 const TESTNET_VERSIONS = { private: 0x04358394, public: 0x043587cf };
 const TESTNET_SEGWIT_VERSIONS = { private: 0x045f18bc, public: 0x045f1cf6 };
 const MAINNET_VERSIONS = { private: 0x0488ade4, public: 0x0488b21e };
 const MAINNET_SEGWIT_VERSIONS = { private: 0x04b2430c, public: 0x04b24746 };
 
 // The human readable part of a bech32 address, and the thing that makes a
-// testnet address impossible to confuse with a real one at a glance
+// test address impossible to confuse with a real one at a glance
+// tb covers signet as well as testnet
 const HRP: Record<KeyMode, string> = {
   [KeyMode.TEST]: 'tb',
   [KeyMode.LIVE]: 'bc',
@@ -27,6 +31,7 @@ const ENV_KEY: Record<KeyMode, string> = {
 };
 
 // The wallet exports the key at m/84'/1'/0', so what is left is chain and index
+// Coin type 1 is every test network, not testnet specifically
 // 0 is the receive chain, 1 would be the wallet's own change
 const RECEIVE_CHAIN = 0;
 

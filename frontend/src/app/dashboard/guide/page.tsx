@@ -128,7 +128,7 @@ export default function GuidePage() {
           </PanelHeader>
           <PanelBody className="space-y-3 text-sm leading-relaxed text-ink-muted">
             <p>
-              This workspace settles on <span className="font-medium text-ink">Bitcoin testnet</span>. That
+              This workspace settles on <span className="font-medium text-ink">Bitcoin signet</span>. That
               is a real Bitcoin network with real blocks, real confirmations and real addresses. The only
               difference from mainnet is that the coins are free, from a faucet, and worth nothing.
             </p>
@@ -169,7 +169,7 @@ export default function GuidePage() {
                 to the hosted checkout page.
               </li>
               <li>
-                <span className="font-medium text-ink">4.</span> Send testnet coins from a faucet and watch
+                <span className="font-medium text-ink">4.</span> Send signet coins from a signet faucet and watch
                 the payment confirm.
               </li>
               <li>
@@ -200,7 +200,7 @@ export default function GuidePage() {
             <span className="font-medium text-ink">Simulate customer payment</span> button on a pending
             payment. In normal use a person sends coins from their own wallet, and that button does the
             same on their behalf so you can watch a payment settle in about ten seconds. Sending real
-            testnet coins to the address instead takes a few minutes and produces an identical result,
+            signet coins to the address instead takes a few minutes and produces an identical result,
             because Oathgate cannot tell the two apart.
           </p>
           <p>

@@ -242,7 +242,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         open={liveInfo}
         onClose={() => setLiveInfo(false)}
         title="Mainnet is not activated"
-        description="This workspace settles on Bitcoin testnet."
+        description="This workspace settles on Bitcoin signet."
       >
         <div className="space-y-4 text-sm leading-relaxed text-ink-muted">
           <p>
@@ -251,7 +251,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             enabled for this workspace.
           </p>
           <p>
-            You do not need it. Testnet is a real Bitcoin network with real blocks, real confirmations and
+            You do not need it. Signet is a real Bitcoin network with real blocks, real confirmations and
             real addresses. You can send coins to any pending payment here and watch it settle for real.
             They are simply free, from a faucet, and worth nothing.
           </p>
