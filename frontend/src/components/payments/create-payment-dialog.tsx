@@ -11,7 +11,9 @@ import { parseFiatInput, formatFiat } from '@/lib/format/money';
 import { useToast } from '@/components/ui/toast';
 import { useMode } from '@/hooks/use-mode';
 
-const CURRENCIES = ['GEL', 'USD', 'EUR', 'TRY'];
+// The three the backend has an exponent for
+// Offering a fourth here only produces a 400 nobody can act on
+const CURRENCIES = ['GEL', 'USD', 'EUR'];
 
 export function CreatePaymentDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { mode } = useMode();

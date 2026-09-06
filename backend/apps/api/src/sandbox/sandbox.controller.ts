@@ -29,7 +29,7 @@ export class SandboxController {
   async create(@Res({ passthrough: true }) response: Response) {
     const { merchantId, expiresAt } = await this.sandbox.create();
 
-    const session = await this.sessions.create(merchantId);
+    const session = await this.sessions.create(merchantId, expiresAt);
 
     response.cookie(
       SESSION_COOKIE,

@@ -34,13 +34,35 @@ export async function getWebhookEndpoint(mode: KeyMode): Promise<WebhookEndpoint
 // Creating a second endpoint replaces the first, because the API has no update
 // route: an endpoint's secret is generated with it and a changed url is a
 // different destination that should not inherit the old signature
+//
+// The secret comes back on creation and never again, so it is returned here
+// rather than dropped. Null means nothing was created
 export async function updateWebhookEndpoint(
   url: string,
   mode: KeyMode,
-): Promise<WebhookEndpoint> {
-  if (USING_MOCK) return delay(mock.updateEndpoint(url), 300);
+): Promise<{ endpoint: WebhookEndpoint; secret: string | null }> {
+  if (USING_MOCK) {
+    const endpoint = mock.updateEndpoint(url);
+    // A stand-in secret, so the reveal and its copy button are exercised with
+    // no backend rather than only in production
+    return delay({ endpoint, secret: `${endpoint.secretPrefix}Xk29fQpL7mNb` }, 300);
+  }
 
   const existing = await getWebhookEndpoint(mode);
+
+  // Saving the url it already has is not a change
+  // The old order disabled the endpoint first, then failed to recreate it on
+  // the unique constraint, so pressing save twice turned deliveries off
+  if (existing && existing.url === url) {
+    return { endpoint: existing, secret: null };
+  }
+
+  // Created before the old one is disabled, so a rejected url leaves the
+  // working endpoint alone
+  const created = await http<WebhookEndpoint & { secret: string }>(
+    `/api/dashboard/webhook-endpoints${query({})}`,
+    { method: 'POST', body: JSON.stringify({ url, mode }) },
+  );
 
   if (existing) {
     await http<WebhookEndpoint>(
@@ -49,8 +71,5 @@ export async function updateWebhookEndpoint(
     );
   }
 
-  return http<WebhookEndpoint>(`/api/dashboard/webhook-endpoints${query({})}`, {
-    method: 'POST',
-    body: JSON.stringify({ url, mode }),
-  });
+  return { endpoint: created, secret: created.secret };
 }

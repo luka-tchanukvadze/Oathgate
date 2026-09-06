@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, RotateCcw } from 'lucide-react';
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/card';
 import { CodeBlock } from '@/components/ui/code-block';
+import { CopyButton } from '@/components/ui/copy-button';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
 import { Field, Input } from '@/components/ui/field';
@@ -48,6 +49,7 @@ export default function WebhooksPage() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [url, setUrl] = useState('');
   const [urlError, setUrlError] = useState<string | null>(null);
+  const [freshSecret, setFreshSecret] = useState<string | null>(null);
 
   const endpoint = useQuery({
     queryKey: extraKeys.endpoint(mode),
@@ -61,9 +63,12 @@ export default function WebhooksPage() {
 
   const save = useMutation({
     mutationFn: (next: string) => updateWebhookEndpoint(next, mode),
-    onSuccess: () => {
+    onSuccess: ({ secret }) => {
       queryClient.invalidateQueries({ queryKey: extraKeys.endpoint(mode) });
-      toast.success('Endpoint saved');
+      // The API returns it once and never again, so it is held here until the
+      // page is left. Without it nobody can verify a signature
+      setFreshSecret(secret);
+      toast.success(secret ? 'Endpoint saved' : 'That is already the endpoint');
     },
     onError: (error) => toast.error('Could not save the endpoint', error.message),
   });
@@ -72,7 +77,8 @@ export default function WebhooksPage() {
     mutationFn: replayWebhook,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.webhooks(mode) });
-      toast.success('Delivery replayed', 'Your endpoint answered 200');
+      // The API queues it and answers 202, so nothing here knows the outcome
+      toast.success('Replay queued', 'The delivery list shows the result');
     },
     onError: (error) => toast.error('Replay failed', error.message),
   });
@@ -226,9 +232,23 @@ export default function WebhooksPage() {
             <CardTitle>Signing secret</CardTitle>
           </CardHeader>
           <CardBody className="space-y-3">
-            <code className="mono block break-all rounded-well bg-surface-muted p-3 text-xs text-ink">
-              {endpoint.data?.secretPrefix}••••••••••••••••
-            </code>
+            {freshSecret ? (
+              <div>
+                <div className="flex items-start gap-2">
+                  <code className="mono block flex-1 break-all rounded-well bg-surface-muted p-3 text-xs text-ink">
+                    {freshSecret}
+                  </code>
+                  <CopyButton value={freshSecret} label="Copy signing secret" />
+                </div>
+                <p className="mt-2 text-xs font-medium text-[var(--bad-fg)]">
+                  Copy this now. It is shown once and cannot be read again.
+                </p>
+              </div>
+            ) : (
+              <code className="mono block break-all rounded-well bg-surface-muted p-3 text-xs text-ink">
+                {endpoint.data?.secretPrefix}••••••••••••••••
+              </code>
+            )}
 
             <div>
               <p className="mb-1.5 text-xs font-medium text-ink">Verifying a delivery</p>

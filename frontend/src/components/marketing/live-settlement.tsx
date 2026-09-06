@@ -13,7 +13,7 @@ const REQUEST = [
   'curl -X POST https://oathgate-api.tchanu.com/api/v1/payments \\',
   '  -H "Authorization: Bearer sk_test_..." \\',
   '  -H "Idempotency-Key: 8c1f-4a20" \\',
-  "  -d '{\"amount\": 1050, \"currency\": \"GEL\"}'",
+  "  -d '{\"fiatAmount\": \"1050\", \"fiatCurrency\": \"GEL\", \"cryptoCurrency\": \"BTC\"}'",
 ].join('\n');
 
 const ADDRESS = 'tb1q8xk2m9v4rj7wq3nz6ha0plc5dus2eg4tyx';

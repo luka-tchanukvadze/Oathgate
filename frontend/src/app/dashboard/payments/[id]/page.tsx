@@ -17,7 +17,7 @@ import { LedgerTable } from '@/components/ledger/ledger-table';
 import { StateMachine } from '@/components/charts/state-machine';
 import { getPaymentDetail, queryKeys, reversePayment, simulatePayment } from '@/lib/api';
 import { buildTimeline } from '@/lib/timeline';
-import { formatCrypto, formatFiat } from '@/lib/format/money';
+import { formatCrypto, formatFiat, formatRate } from '@/lib/format/money';
 import { formatDateTime, formatRelative } from '@/lib/format/date';
 import { cn, truncateMiddle } from '@/lib/utils';
 import { useToast } from '@/components/ui/toast';
@@ -291,7 +291,7 @@ export default function PaymentDetailPage({ params }: { params: Promise<{ id: st
               </Detail>
               <Detail label="Locked rate">
                 <span className="mono">
-                  1 BTC = {formatFiat(payment.quotedRate, payment.fiatCurrency)} {payment.fiatCurrency}
+                  1 BTC = {formatRate(payment.quotedRate)} {payment.fiatCurrency}
                 </span>
               </Detail>
               <Detail label="Address">

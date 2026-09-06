@@ -95,6 +95,11 @@ export class PaymentsController {
       throw new ForbiddenException('confirm is only available in test mode');
     }
 
+    // The scoped read first, because settle takes a merchant and an id and
+    // asks nothing about mode. Without this a test key settles a live payment
+    // belonging to the same merchant, and a wrong mode is now a 404
+    await this.payments.get(merchant.merchantId, merchant.mode, id);
+
     const { payment } = await this.settlement.settle(merchant.merchantId, id);
 
     return toPaymentResponse(payment);
@@ -113,6 +118,8 @@ export class PaymentsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ReversePaymentDto,
   ) {
+    await this.payments.get(merchant.merchantId, merchant.mode, id);
+
     const { payment, reversed } = await this.settlement.reverse(
       merchant.merchantId,
       id,

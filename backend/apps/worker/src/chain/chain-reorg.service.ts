@@ -74,6 +74,16 @@ export class ChainReorgService {
   }
 
   private async check(payment: Settled): Promise<void> {
+    // Nothing on chain means nothing that could have stopped being confirmed
+    //
+    // The confirm endpoint stands in for a customer's wallet and settles
+    // without any coins moving, so it writes ledger entries and no chain
+    // transaction. Without this the sweep reads that as credited money the
+    // chain cannot account for and takes it straight back
+    if (payment.chainTxs.length === 0) {
+      return;
+    }
+
     // The watcher clears a block hash the moment a transaction leaves its
     // block, and confirmations go back to zero with it
     // So a reorg shows up here as money that stopped being confirmed

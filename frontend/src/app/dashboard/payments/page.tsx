@@ -44,7 +44,7 @@ const RANGES = [
 const CURL = `curl -X POST https://oathgate-api.tchanu.com/api/v1/payments \\
   -H "Authorization: Bearer sk_test_..." \\
   -H "Idempotency-Key: $(uuidgen)" \\
-  -d '{"amount": 1050, "currency": "GEL"}'`;
+  -d '{"fiatAmount": "1050", "fiatCurrency": "GEL", "cryptoCurrency": "BTC"}'`;
 
 function PaymentsInner() {
   const { mode } = useMode();

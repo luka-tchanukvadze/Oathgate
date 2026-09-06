@@ -55,12 +55,17 @@ export class SessionService {
     }
   }
 
+  // endsAt is for a workspace that dies on its own schedule
+  // A sandbox visitor has no password, so a session running out before the
+  // workspace does would lock them out of an account with nothing to sign back
+  // in with. The sweep revokes both together
   async create(
     merchantId: string,
+    endsAt?: Date,
   ): Promise<{ token: string; expiresAt: Date }> {
     // 32 bytes of entropy, so there is nothing to guess and nothing to sign
     const token = randomBytes(32).toString('base64url');
-    const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
+    const expiresAt = endsAt ?? new Date(Date.now() + SESSION_TTL_MS);
 
     await this.prisma.merchantSession.create({
       data: { merchantId, tokenHash: sha256(token), expiresAt },

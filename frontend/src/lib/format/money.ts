@@ -68,6 +68,15 @@ export function formatFiatWithCurrency(minor: MinorUnits, currency: string): str
   return `${formatFiat(minor, currency)} ${currency.toUpperCase()}`;
 }
 
+// An exchange rate is whole units per coin, not minor units
+// 300000 is three hundred thousand GEL per BTC, and formatFiat would read the
+// same digits as 3,000.00
+export function formatRate(rate: string): string {
+  const [whole, frac = ''] = rate.split('.');
+  const trimmed = frac.replace(/0+$/, '').slice(0, 2);
+  return trimmed ? `${group(whole)}.${trimmed}` : group(whole);
+}
+
 // Crypto keeps trailing zeros off, but always shows at least two decimals so
 // amounts stay visually aligned in a table
 export function formatCrypto(minor: MinorUnits, currency: string): string {
