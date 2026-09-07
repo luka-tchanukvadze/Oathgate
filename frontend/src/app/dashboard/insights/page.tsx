@@ -8,7 +8,7 @@ import { CodeBlock } from '@/components/ui/code-block';
 import { Button } from '@/components/ui/button';
 import { ErrorState } from '@/components/ui/error-state';
 import { getInsights, listPayments, queryKeys } from '@/lib/api';
-import { medianSettlementMinutes } from '@/lib/derive/insights';
+import { medianSettlementMinutes, WINDOW_DAYS, withinWindow } from '@/lib/derive/insights';
 import { useMode } from '@/hooks/use-mode';
 
 const TONE_LABEL = {
@@ -37,7 +37,9 @@ export default function InsightsPage() {
   });
 
   const cards = insights.data ?? [];
-  const rows = payments.data ?? [];
+  // The same window the cards were counted over, from the same function, so the
+  // printed summary cannot disagree with the numbers above it
+  const rows = withinWindow(payments.data ?? []);
 
   // Everything the cards above are built from, printed so a merchant can check
   // them. Counts and timings, never an address, never a key, never a customer
@@ -48,7 +50,7 @@ export default function InsightsPage() {
     underpaid: rows.filter((p) => p.status === 'UNDERPAID').length,
     reversed: rows.filter((p) => p.status === 'REVERSED').length,
     median_settlement_minutes: medianSettlementMinutes(rows),
-    window_days: 14,
+    window_days: WINDOW_DAYS,
     mode: mode.toLowerCase(),
   };
 
@@ -56,7 +58,7 @@ export default function InsightsPage() {
     <>
       <PageHeader
         title="Insights"
-        description="Patterns in the last 14 days of payment activity. Read only, and it cannot change anything."
+        description={`Patterns in the last ${WINDOW_DAYS} days of payment activity. Read only, and it cannot change anything.`}
         action={
           <Button variant="secondary" onClick={() => insights.refetch()} loading={insights.isFetching}>
             <RefreshCw className="size-3.5" aria-hidden />

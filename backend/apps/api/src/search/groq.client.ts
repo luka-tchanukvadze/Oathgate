@@ -42,9 +42,13 @@ export class GroqClient {
       .filter((id): id is string => typeof id === 'string');
   }
 
+  // Answers with the raw text rather than parsing it, so the caller can tell a
+  // provider that is down from a provider that answered badly
+  // Those two want different handling and one try block cannot separate them
+  //
   // Temperature zero because the same sentence should always read the same way
   // A search that returns different filters for one query is not a search
-  async completeJson(system: string, user: string): Promise<unknown> {
+  async complete(system: string, user: string): Promise<string> {
     const response = await this.send(
       '/chat/completions',
       {
@@ -70,7 +74,7 @@ export class GroqClient {
       throw new Error('groq returned no content');
     }
 
-    return JSON.parse(content);
+    return content;
   }
 
   private async send(

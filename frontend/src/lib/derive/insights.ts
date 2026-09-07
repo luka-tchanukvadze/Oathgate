@@ -11,6 +11,18 @@ import type { Insight, Payment } from '@/types';
 
 const MINUTE = 60_000;
 
+// The window every figure on that screen is scoped to, and the number the
+// page prints next to them
+export const WINDOW_DAYS = 14;
+
+// Applied here rather than at the call site, so the cards and the summary
+// printed under them can never be counted over different sets of rows
+export function withinWindow(payments: Payment[]): Payment[] {
+  const cutoff = Date.now() - WINDOW_DAYS * 24 * 60 * MINUTE;
+
+  return payments.filter((p) => new Date(p.createdAt).getTime() >= cutoff);
+}
+
 // Median rather than mean. One payment left open over a weekend drags an
 // average into nonsense and says nothing about the usual case
 function medianMinutes(values: number[]): number | null {
@@ -35,7 +47,8 @@ export function medianSettlementMinutes(payments: Payment[]): number | null {
   return medianMinutes(waits);
 }
 
-export function deriveInsights(payments: Payment[]): Insight[] {
+export function deriveInsights(all: Payment[]): Insight[] {
+  const payments = withinWindow(all);
   const settled = payments.filter((p) => p.status === 'PAID');
   const expired = payments.filter((p) => p.status === 'EXPIRED').length;
   const underpaid = payments.filter((p) => p.status === 'UNDERPAID').length;
@@ -48,7 +61,7 @@ export function deriveInsights(payments: Payment[]): Insight[] {
       body:
         expired === 0
           ? 'Nothing expired with a customer still trying to pay it.'
-          : `${expired} quote${expired === 1 ? '' : 's'} expired with nothing arriving, which usually means the checkout window is shorter than customers need rather than that they changed their mind.`,
+          : `${expired} quote${expired === 1 ? '' : 's'} ran out with nothing arriving. A checkout window shorter than customers need would look like this, and so would customers changing their mind. The counts do not tell the two apart.`,
       tone: expired > settled.length / 3 ? 'warn' : 'good',
     },
     {
@@ -59,7 +72,7 @@ export function deriveInsights(payments: Payment[]): Insight[] {
           : 'No underpayments',
       body:
         underpaid > 0
-          ? 'The shortfall looks like a wallet deducting the network fee from the amount instead of adding it. Worth a dust tolerance before treating these as failures.'
+          ? 'One cause worth ruling out first is a wallet deducting the network fee from the amount instead of adding it, which lands a few hundred satoshis short. Compare the shortfall against the fee before treating these as failures.'
           : 'Every confirmed payment covered its quoted amount in full.',
       tone: underpaid > 0 ? 'warn' : 'good',
     },

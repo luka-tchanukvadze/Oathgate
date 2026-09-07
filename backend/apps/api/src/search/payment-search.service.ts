@@ -21,6 +21,10 @@ const CACHE_LIMIT = 200;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// bech32 on signet and mainnet, plus the two older base58 forms
+// Loose on purpose: this only decides whether to spend a model call
+const ADDRESS = /^(tb1|bc1|[13])[a-z0-9]{10,}$/i;
+
 // The question arrives as the user message and never inside these lines, so a
 // merchant typing an instruction is data being read and not an order I follow
 const SYSTEM_PROMPT = [
@@ -72,10 +76,13 @@ export class PaymentSearchService {
   ): Promise<SearchOutcome> {
     const term = q.trim();
 
-    // An id, a reference and an address all have no spaces in them, and none
-    // of the three needs a model to be understood
-    // That is most of what anyone types, so most searches cost nothing
-    if (!term.includes(' ')) {
+    // The dto allows one character, so a box holding only spaces gets this far
+    // Without it that trims to nothing and goes on to ask a model about it
+    if (term.length === 0) {
+      return { payments: [], interpretation: null, usedAi: false };
+    }
+
+    if (looksLikeIdentifier(term)) {
       const payments = await this.literal(merchantId, mode, term);
 
       return { payments, interpretation: null, usedAi: false };
@@ -110,13 +117,27 @@ export class PaymentSearchService {
       return null;
     }
 
-    let raw: unknown;
+    let answer: string;
 
     try {
-      raw = await this.groq.completeJson(SYSTEM_PROMPT, term);
+      answer = await this.groq.complete(SYSTEM_PROMPT, term);
       this.availability.recordSuccess();
     } catch (error) {
       this.availability.recordFailure(error);
+
+      return null;
+    }
+
+    // Parsed outside the try above, and the breaker is left alone if it fails
+    // A provider that answers badly is a provider that is working, and opening
+    // the breaker on one malformed reply would take the feature off everyone
+    // for five minutes over a single odd question
+    let raw: unknown;
+
+    try {
+      raw = JSON.parse(answer);
+    } catch {
+      this.logger.warn('the model answered with something that is not json');
 
       return null;
     }
@@ -268,14 +289,18 @@ export class PaymentSearchService {
     const parts = [`${statuses}payments`];
     const currency = filter.fiatCurrency;
 
+    // "or more" and "or less", because the bounds are gte and lte and a payment
+    // of exactly 50 is included
+    // This line is the only reason a merchant can trust a filter they did not
+    // write, so it says what ran rather than roughly what ran
     if (currency && filter.minAmount && filter.maxAmount) {
       parts.push(
         `between ${filter.minAmount} and ${filter.maxAmount} ${currency}`,
       );
     } else if (currency && filter.minAmount) {
-      parts.push(`over ${filter.minAmount} ${currency}`);
+      parts.push(`of ${filter.minAmount} ${currency} or more`);
     } else if (currency && filter.maxAmount) {
-      parts.push(`under ${filter.maxAmount} ${currency}`);
+      parts.push(`of ${filter.maxAmount} ${currency} or less`);
     } else if (currency) {
       parts.push(`in ${currency}`);
     }
@@ -303,7 +328,17 @@ export class PaymentSearchService {
 // This only reshapes what is already there and adds nothing, so the class is
 // still the thing that decides what survives
 function normalize(raw: Record<string, unknown>): Record<string, unknown> {
-  const shaped = { ...raw };
+  const shaped: Record<string, unknown> = {};
+
+  // A null field means the model had nothing to say, so it is dropped here
+  // rather than carried
+  // IsOptional skips null as well as undefined, so a null would otherwise pass
+  // the whitelist and then fail every === undefined check downstream
+  for (const [field, value] of Object.entries(raw)) {
+    if (value !== null) {
+      shaped[field] = value;
+    }
+  }
 
   if (typeof shaped.status === 'string') {
     shaped.status = [shaped.status];
@@ -316,6 +351,20 @@ function normalize(raw: Record<string, unknown>): Record<string, unknown> {
   }
 
   return shaped;
+}
+
+// What goes straight to a text match instead of costing a model call
+//
+// A payment id, an address, and a reference, which is the merchant's own order
+// number and so nearly always carries a digit. Everything else is a question,
+// including the one word ones: underpaid, refunded and expired are the shortest
+// things anybody types and none of them is an identifier
+function looksLikeIdentifier(term: string): boolean {
+  if (UUID.test(term) || ADDRESS.test(term)) {
+    return true;
+  }
+
+  return !term.includes(' ') && /\d/.test(term);
 }
 
 // "50" with an exponent of 2 comes out as 5000, and "0.5" as 50

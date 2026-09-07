@@ -1,3 +1,4 @@
+import { describe, expect, it } from '@jest/globals';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { PaymentFilterDto } from './payment-filter.dto';
@@ -10,6 +11,13 @@ async function check(raw: unknown) {
   const errors = await validate(filter, { whitelist: true });
 
   return { filter, rejected: errors.length > 0 };
+}
+
+// The same drop the service does before validating
+function stripNulls(raw: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(raw).filter(([, value]) => value !== null),
+  );
 }
 
 describe('PaymentFilterDto', () => {
@@ -77,6 +85,28 @@ describe('PaymentFilterDto', () => {
 
     it('refuses an amount long enough to overflow the column', async () => {
       expect((await check({ maxAmount: '9'.repeat(13) })).rejected).toBe(true);
+    });
+  });
+
+  // The trap here is that IsOptional skips null as well as undefined, so a null
+  // survives the whitelist and then fails every === undefined check after it.
+  // normalize drops nulls before this runs, and these assert the class behaves
+  // as the rest of the code expects once it has
+  describe('null', () => {
+    it('lets a null through, which is why normalize drops it first', async () => {
+      const { filter, rejected } = await check({ withinDays: null });
+
+      expect(rejected).toBe(false);
+      expect(filter.withinDays).toBeNull();
+    });
+
+    it('is absent once normalize has dropped it', async () => {
+      const { filter, rejected } = await check(
+        stripNulls({ status: ['PAID'], withinDays: null }),
+      );
+
+      expect(rejected).toBe(false);
+      expect(filter.withinDays).toBeUndefined();
     });
   });
 
