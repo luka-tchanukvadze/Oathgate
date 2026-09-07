@@ -36,9 +36,26 @@ export class LedgerService {
     const transferId = randomUUID();
 
     for (const leg of ordered) {
-      await tx.$queryRaw`
-        SELECT id FROM account WHERE id = ${leg.accountId}::uuid FOR UPDATE
+      // The currency comes back from the lock I was taking anyway, so checking
+      // it costs nothing
+      const [account] = await tx.$queryRaw<{ currency: string }[]>`
+        SELECT currency FROM account
+        WHERE id = ${leg.accountId}::uuid
+        FOR UPDATE
       `;
+
+      // Without this the balance check is the only guard, and it is satisfied
+      // by satoshis debited against lari credited: the numbers agree and the
+      // books are nonsense
+      if (!account) {
+        throw new Error(`no account ${leg.accountId} to post to`);
+      }
+
+      if (account.currency !== transfer.currency) {
+        throw new Error(
+          `cannot post ${transfer.currency} to an account holding ${account.currency}`,
+        );
+      }
 
       await tx.ledgerEntry.create({
         data: {

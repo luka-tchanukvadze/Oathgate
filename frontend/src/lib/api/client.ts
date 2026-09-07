@@ -66,15 +66,41 @@ export const MAX_PAGE = {
   deliveries: 100,
 } as const;
 
+// How many requests one call here will make before it gives up. At the page
+// sizes above that is a few thousand rows, and past that a browser adding up a
+// ledger is the wrong design rather than a page short
+const MAX_REQUESTS = 20;
+
 // Every list route answers with the rows and whether there are more of them
 //
 // The screens want an array, so the envelope is opened here. Not in http,
 // which is transport and has no idea which routes paginate, and not in a
 // component, which should never learn the shape of the wire at all
-export async function page<T>(
+//
+// hasMore is followed rather than dropped. A total summed from the first page
+// is not a total: the balance screen compared a cached balance against the
+// entries it could see and called a healthy account drifted the moment the
+// ledger grew past one page
+export async function page<T extends { id: string }>(
   path: string,
   params: Record<string, string | number | undefined>,
 ): Promise<T[]> {
-  const body = await http<{ data: T[]; hasMore: boolean }>(`${path}${query(params)}`);
-  return body.data;
+  const rows: T[] = [];
+  let startingAfter: string | undefined;
+
+  for (let request = 0; request < MAX_REQUESTS; request += 1) {
+    const body = await http<{ data: T[]; hasMore: boolean }>(
+      `${path}${query({ ...params, startingAfter })}`,
+    );
+
+    rows.push(...body.data);
+
+    if (!body.hasMore || body.data.length === 0) break;
+
+    // The cursor is the last id of this page, which is why every row type here
+    // carries one
+    startingAfter = body.data[body.data.length - 1].id;
+  }
+
+  return rows;
 }

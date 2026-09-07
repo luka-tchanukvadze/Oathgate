@@ -8,6 +8,9 @@ export interface PaymentSearch {
   // Null whenever the search was a plain text match
   interpretation: string | null;
   usedAi: boolean;
+  // More matched than came back. Said out loud, because a capped answer that
+  // looks complete is worse than one that admits it is not
+  truncated: boolean;
 }
 
 // Whether the search box can read a sentence right now
@@ -32,7 +35,7 @@ export async function searchPayments(mode: KeyMode, q: string): Promise<PaymentS
           payment.address.toLowerCase().includes(term),
       );
 
-    return delay({ data, interpretation: null, usedAi: false });
+    return delay({ data, interpretation: null, usedAi: false, truncated: false });
   }
 
   return http<PaymentSearch>(`/api/dashboard/search/payments${query({ mode, q })}`);

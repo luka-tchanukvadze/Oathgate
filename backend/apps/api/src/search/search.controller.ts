@@ -44,6 +44,7 @@ export class SearchController {
       data: outcome.payments.map(toPaymentResponse),
       interpretation: outcome.interpretation,
       usedAi: outcome.usedAi,
+      truncated: outcome.truncated,
     };
   }
 }

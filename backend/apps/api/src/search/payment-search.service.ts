@@ -55,6 +55,9 @@ export interface SearchOutcome {
   // A sentence it made up could disagree with the filter it returned
   interpretation: string | null;
   usedAi: boolean;
+  // Whether there were more matches than came back
+  // A capped answer that looks complete is worse than one that says it is not
+  truncated: boolean;
 }
 
 @Injectable()
@@ -79,25 +82,30 @@ export class PaymentSearchService {
     // The dto allows one character, so a box holding only spaces gets this far
     // Without it that trims to nothing and goes on to ask a model about it
     if (term.length === 0) {
-      return { payments: [], interpretation: null, usedAi: false };
+      return {
+        payments: [],
+        interpretation: null,
+        usedAi: false,
+        truncated: false,
+      };
     }
 
     if (looksLikeIdentifier(term)) {
-      const payments = await this.literal(merchantId, mode, term);
+      const found = await this.literal(merchantId, mode, term);
 
-      return { payments, interpretation: null, usedAi: false };
+      return { ...found, interpretation: null, usedAi: false };
     }
 
     const filter = await this.interpret(term);
 
     if (!filter) {
-      const payments = await this.literal(merchantId, mode, term);
+      const found = await this.literal(merchantId, mode, term);
 
-      return { payments, interpretation: null, usedAi: false };
+      return { ...found, interpretation: null, usedAi: false };
     }
 
     return {
-      payments: await this.filtered(merchantId, mode, filter),
+      ...(await this.filtered(merchantId, mode, filter)),
       interpretation: this.describe(filter),
       usedAi: true,
     };
@@ -200,7 +208,7 @@ export class PaymentSearchService {
     merchantId: string,
     mode: KeyMode,
     filter: PaymentFilterDto,
-  ): Promise<Payment[]> {
+  ): Promise<{ payments: Payment[]; truncated: boolean }> {
     // The filter is read one named field at a time and never spread
     //
     // merchantId and mode go last, because the last key wins in a spread
@@ -223,11 +231,7 @@ export class PaymentSearchService {
       mode,
     };
 
-    return this.prisma.payment.findMany({
-      where,
-      orderBy: { id: 'desc' },
-      take: RESULT_LIMIT,
-    });
+    return this.take(where);
   }
 
   // A bound with no currency would compare 50 GEL against 50 USD as if they
@@ -259,11 +263,7 @@ export class PaymentSearchService {
     merchantId: string,
     mode: KeyMode,
     term: string,
-  ): Promise<Payment[]> {
-    if (term.length === 0) {
-      return [];
-    }
-
+  ): Promise<{ payments: Payment[]; truncated: boolean }> {
     const or: Prisma.PaymentWhereInput[] = [
       { reference: { contains: term, mode: 'insensitive' } },
       { address: { contains: term, mode: 'insensitive' } },
@@ -274,11 +274,24 @@ export class PaymentSearchService {
       or.push({ id: term });
     }
 
-    return this.prisma.payment.findMany({
-      where: { merchantId, mode, OR: or },
+    return this.take({ merchantId, mode, OR: or });
+  }
+
+  // One row more than I will hand back, so whether there are others is known
+  // without a second counting query
+  private async take(
+    where: Prisma.PaymentWhereInput,
+  ): Promise<{ payments: Payment[]; truncated: boolean }> {
+    const rows = await this.prisma.payment.findMany({
+      where,
       orderBy: { id: 'desc' },
-      take: RESULT_LIMIT,
+      take: RESULT_LIMIT + 1,
     });
+
+    return {
+      payments: rows.slice(0, RESULT_LIMIT),
+      truncated: rows.length > RESULT_LIMIT,
+    };
   }
 
   private describe(filter: PaymentFilterDto): string {

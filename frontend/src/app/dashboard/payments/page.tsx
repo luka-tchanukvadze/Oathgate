@@ -158,6 +158,12 @@ function PaymentsInner() {
                 Matching <span className="mono text-ink">{search}</span>
               </span>
             ))}
+
+          {results.data?.truncated && (
+            <span className="text-ink-subtle">
+              Showing the first {results.data.data.length}. Narrow the search to see the rest
+            </span>
+          )}
           <Link
             href="/dashboard/payments"
             onClick={() => {
