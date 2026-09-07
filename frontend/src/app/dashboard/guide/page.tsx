@@ -56,7 +56,11 @@ const SCREENS = [
   { href: '/dashboard/developers/keys', name: 'API keys', what: 'The password your server uses to prove it is you.' },
   { href: '/dashboard/developers/webhooks', name: 'Webhooks', what: 'Oathgate calling your server when something happens, so you do not have to keep asking.' },
   { href: '/dashboard/developers/events', name: 'Events', what: 'A log of everything the services did behind your payments. Where you look when something behaved oddly.' },
-  { href: '/dashboard/insights', name: 'Insights', what: 'A language model reading your numbers and saying what it notices. Read only, always.' },
+  {
+    href: '/dashboard/insights',
+    name: 'Insights',
+    what: 'What the last two weeks are telling you. Settlement rate, where quotes are expiring, and how long customers actually wait. Counted from your rows, never guessed.',
+  },
   {
     href: '/dashboard/payments',
     name: 'Search',

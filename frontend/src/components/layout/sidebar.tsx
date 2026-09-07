@@ -8,10 +8,10 @@ import {
   BookOpen,
   ChevronDown,
   Code2,
+  Gauge,
   Home,
   KeyRound,
   ScrollText,
-  Sparkles,
   Wallet,
   Webhook,
 } from 'lucide-react';
@@ -46,7 +46,7 @@ const NAV = [
       },
     ],
   },
-  { href: '/dashboard/insights', label: 'Insights', icon: Sparkles },
+  { href: '/dashboard/insights', label: 'Insights', icon: Gauge },
   { href: '/dashboard/guide', label: 'Guide', icon: BookOpen },
 ];
 

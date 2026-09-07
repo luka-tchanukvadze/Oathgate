@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
-import { BookOpen, ChevronDown, Clock, LogOut, Sparkles } from 'lucide-react';
+import { BookOpen, ChevronDown, Clock, Gauge, LogOut } from 'lucide-react';
 import { logout } from '@/lib/api/auth';
 
 // Rounded down, so twenty three and a half hours reads as 23 rather than as a
@@ -121,14 +121,15 @@ export function AccountMenu({
           )}
 
           {/* The phone tab bar carries the four main sections and these two do
-              not fit in it, so this is the only way to reach them on a phone */}
+              not fit in it, so this is the only way to reach them on a phone
+              They go once the sidebar appears, which already lists both */}
           <Link
             href="/dashboard/insights"
             role="menuitem"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-ink-muted hover:bg-surface-muted hover:text-ink"
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-ink-muted hover:bg-surface-muted hover:text-ink lg:hidden"
           >
-            <Sparkles className="size-3.5" aria-hidden />
+            <Gauge className="size-3.5" aria-hidden />
             Insights
           </Link>
 
@@ -136,7 +137,7 @@ export function AccountMenu({
             href="/dashboard/guide"
             role="menuitem"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-ink-muted hover:bg-surface-muted hover:text-ink"
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-ink-muted hover:bg-surface-muted hover:text-ink lg:hidden"
           >
             <BookOpen className="size-3.5" aria-hidden />
             Integration guide

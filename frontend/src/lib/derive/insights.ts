@@ -4,8 +4,10 @@ import type { Insight, Payment } from '@/types';
 // screen. No endpoint, so there is nothing that can tell the merchant one thing
 // here and a different thing on the payments table
 //
-// A model is connected later. When it is, it reads this same summary and never
-// a reference or an address, so nothing a customer typed can reach a prompt
+// Counted rather than generated, and that is the choice rather than a stage on
+// the way to something better. A wrong filter in the search box is visible in
+// the line above the results, and a wrong number here would look exactly like a
+// right one
 
 const MINUTE = 60_000;
 
@@ -22,16 +24,22 @@ function medianMinutes(values: number[]): number | null {
     : Math.round(sorted[middle]);
 }
 
+// Created to settled, which is the wait a customer actually feels
+// Exported because the page prints this number next to the cards, and two
+// copies of the same arithmetic is how a screen ends up disagreeing with itself
+export function medianSettlementMinutes(payments: Payment[]): number | null {
+  const waits = payments
+    .filter((p) => p.status === 'PAID')
+    .map((p) => (new Date(p.updatedAt).getTime() - new Date(p.createdAt).getTime()) / MINUTE);
+
+  return medianMinutes(waits);
+}
+
 export function deriveInsights(payments: Payment[]): Insight[] {
   const settled = payments.filter((p) => p.status === 'PAID');
   const expired = payments.filter((p) => p.status === 'EXPIRED').length;
   const underpaid = payments.filter((p) => p.status === 'UNDERPAID').length;
-
-  // Created to settled, which is the wait a customer actually feels
-  const waits = settled.map(
-    (p) => (new Date(p.updatedAt).getTime() - new Date(p.createdAt).getTime()) / MINUTE,
-  );
-  const median = medianMinutes(waits);
+  const median = medianSettlementMinutes(payments);
 
   return [
     {

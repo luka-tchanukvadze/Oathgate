@@ -1,13 +1,14 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { RefreshCw, Sparkles } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Panel, PanelBody, PanelHeader, PanelTitle } from '@/components/ui/panel';
 import { CodeBlock } from '@/components/ui/code-block';
 import { Button } from '@/components/ui/button';
 import { ErrorState } from '@/components/ui/error-state';
 import { getInsights, listPayments, queryKeys } from '@/lib/api';
+import { medianSettlementMinutes } from '@/lib/derive/insights';
 import { useMode } from '@/hooks/use-mode';
 
 const TONE_LABEL = {
@@ -16,13 +17,14 @@ const TONE_LABEL = {
   neutral: 'Observation',
 } as const;
 
-// No model is connected yet. These observations are derived from the seeded
-// rows by plain rules, so the page says exactly that. I had a staggered reveal
-// here to make it feel like a model was thinking, which was theatre, and the
-// kind of thing a technical reader spots and then discounts everything else for
+// Counted from the merchant's own rows by plain rules.
+// I had a staggered reveal here to make it feel like a model was thinking,
+// which was theatre, and the kind of thing a technical reader spots and then
+// discounts everything else for
 //
-// Phase 6 connects a real model, Gemini or Groq on their free tier, and this
-// page swaps the badge and starts showing real generation metadata
+// The model went to the search box instead. A filter it reads wrong is visible
+// in the line above the results, and a number it reads wrong here would look
+// exactly like a number it read right
 
 export default function InsightsPage() {
   const { mode } = useMode();
@@ -37,15 +39,15 @@ export default function InsightsPage() {
   const cards = insights.data ?? [];
   const rows = payments.data ?? [];
 
-  // The exact thing the model is given. Counts and timings, never an address,
-  // never a key, never a customer
+  // Everything the cards above are built from, printed so a merchant can check
+  // them. Counts and timings, never an address, never a key, never a customer
   const context = {
     payments_total: rows.length,
     settled: rows.filter((p) => p.status === 'PAID').length,
     expired: rows.filter((p) => p.status === 'EXPIRED').length,
     underpaid: rows.filter((p) => p.status === 'UNDERPAID').length,
     reversed: rows.filter((p) => p.status === 'REVERSED').length,
-    median_confirmation_minutes: 25,
+    median_settlement_minutes: medianSettlementMinutes(rows),
     window_days: 14,
     mode: mode.toLowerCase(),
   };
@@ -62,17 +64,6 @@ export default function InsightsPage() {
           </Button>
         }
       />
-
-      <div
-        className="mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs"
-        style={{ backgroundColor: 'var(--neutral-bg)', color: 'var(--neutral-fg)' }}
-      >
-        <Sparkles className="size-3.5" aria-hidden />
-        <span>
-          <span className="font-semibold">Rule based preview.</span> Generated from your payment rows, not
-          by a model. A language model is connected in a later phase.
-        </span>
-      </div>
 
       {insights.isError && !insights.data && (
         <Panel className="mb-4">
