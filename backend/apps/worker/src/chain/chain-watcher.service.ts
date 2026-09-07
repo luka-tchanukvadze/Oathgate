@@ -49,6 +49,15 @@ export class ChainWatcherService {
         }
       }
 
+      // Stamped whether or not each check succeeded, and in one statement
+      // rather than per payment
+      // An address the explorer keeps refusing would otherwise stay at the
+      // front of the queue and starve everything behind it
+      await this.prisma.payment.updateMany({
+        where: { id: { in: watched.map((payment) => payment.id) } },
+        data: { lastCheckedAt: new Date() },
+      });
+
       if (seen > 0) {
         this.logger.log(`recorded ${seen} chain transactions`);
       }
@@ -63,6 +72,11 @@ export class ChainWatcherService {
 
   // Only what can still change
   // A paid payment needs no polling, nor one that expired last week
+  //
+  // Ordered by when each was last looked at, oldest first, so the batch rotates
+  // through everything eligible instead of re-reading the same 25. Ordering by
+  // creation meant twenty five unpaid payments could sit at the front for ever
+  // and a newer one, with a customer actually paying it, was never checked
   private async watchedPayments() {
     const lateWindow = new Date(Date.now() - LATE_WINDOW_MS);
 
@@ -80,7 +94,9 @@ export class ChainWatcherService {
           { status: PaymentStatus.EXPIRED, expiresAt: { gt: lateWindow } },
         ],
       },
-      orderBy: { createdAt: 'asc' },
+      // Never checked sorts before checked a minute ago, which is what puts a
+      // brand new payment at the front rather than at the back
+      orderBy: { lastCheckedAt: { sort: 'asc', nulls: 'first' } },
       take: BATCH_SIZE,
       select: { id: true, address: true, cryptoCurrency: true },
     });

@@ -110,6 +110,11 @@ model Payment {
   status    PaymentStatus @default(PENDING)
   expiresAt DateTime      @db.Timestamptz(3)
 
+  // When the chain watcher last asked the explorer about this address
+  // Null means never, and null sorts first, so a payment created a moment ago
+  // goes to the front of the queue instead of behind everything older than it
+  lastCheckedAt DateTime? @db.Timestamptz(3)
+
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
@@ -119,6 +124,8 @@ model Payment {
   @@unique([address])
   @@index([status, expiresAt])
   @@index([merchantId, mode, createdAt])
+  // What the watcher orders by when it picks its next batch
+  @@index([mode, lastCheckedAt])
   // Not unique. One order can need a second payment after the first expires
   @@index([merchantId, mode, reference])
   @@map("payment")
@@ -344,7 +351,10 @@ model WebhookEndpoint {
 
   deliveries WebhookDelivery[]
 
-  @@unique([merchantId, mode, url])
+  // The uniqueness on (merchantId, mode, url) is a partial index, written by
+  // hand in the migration because it only applies while disabledAt is null.
+  // A plain unique would let a disabled endpoint keep holding its own url, so
+  // moving a webhook to a staging address and back would answer 409 for ever
   @@index([merchantId, mode])
   @@map("webhook_endpoint")
 }

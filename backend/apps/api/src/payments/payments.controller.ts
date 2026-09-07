@@ -45,7 +45,12 @@ export class PaymentsController {
     return this.idempotency.run({
       merchantId: merchant.merchantId,
       key,
-      requestHash: hashRequest(dto),
+      // Mode is hashed in, though it is not in the body
+      // A key carries its own mode, so the same order number sent with a test
+      // key and a live key is two different requests, and without this the
+      // second caller is handed the first one's payment from the other world
+      // The dashboard route gets this for free, because mode is in its body
+      requestHash: hashRequest({ ...dto, mode: merchant.mode }),
       successStatus: 201,
       handler: async () =>
         toPaymentResponse(await this.payments.create(merchant, dto)),
