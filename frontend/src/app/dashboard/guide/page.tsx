@@ -57,6 +57,11 @@ const SCREENS = [
   { href: '/dashboard/developers/webhooks', name: 'Webhooks', what: 'Oathgate calling your server when something happens, so you do not have to keep asking.' },
   { href: '/dashboard/developers/events', name: 'Events', what: 'A log of everything the services did behind your payments. Where you look when something behaved oddly.' },
   { href: '/dashboard/insights', name: 'Insights', what: 'A language model reading your numbers and saying what it notices. Read only, always.' },
+  {
+    href: '/dashboard/payments',
+    name: 'Search',
+    what: 'The box at the top of every screen. It takes an id or a reference, and it also reads a plain English question.',
+  },
 ];
 
 export default function GuidePage() {
@@ -156,8 +161,7 @@ export default function GuidePage() {
           <PanelBody>
             <ol className="space-y-3 text-sm leading-relaxed text-ink-muted">
               <li>
-                <span className="font-medium text-ink">1.</span> Sign up and get a test key from the API
-                keys page.
+                <span className="font-medium text-ink">1.</span> Take a test key from the API keys page.
               </li>
               <li>
                 <span className="font-medium text-ink">2.</span> Call{' '}
@@ -191,9 +195,9 @@ export default function GuidePage() {
         </PanelHeader>
         <PanelBody className="space-y-3 text-sm leading-relaxed text-ink-muted">
           <p>
-            You are signed in to <span className="font-medium text-ink">Demo Coffee Co</span>, a shared
-            workspace open to anyone, with no account required. It is seeded with two weeks of payments so
-            every screen has something in it.
+            You are signed in to a workspace of your own, created the moment you clicked in and named after
+            a shop picked at random. No email, no password, and nobody else&rsquo;s payments in it. It is
+            seeded with two weeks of activity so every screen has something to show.
           </p>
           <p>
             One thing here stands in for something outside the system: the{' '}
@@ -206,6 +210,15 @@ export default function GuidePage() {
           <p>
             Everything the button triggers afterwards is the real path: the same confirmations, the same
             ledger entries, the same webhook.
+          </p>
+          <p>
+            The search box reads plain English as well as ids.{' '}
+            <span className="mono text-xs">paid payments over 50 GEL last week</span> works, and the line
+            under the results shows you how it was read, so a wrong answer is a visible one. A language
+            model does that reading on a free tier, and the small mark at the right of the box is how you
+            know it is working. When the mark is gone the box has gone back to matching your text literally
+            rather than failing, and if you catch it like that and want the full thing, tell me and I will
+            bring it back.
           </p>
         </PanelBody>
       </Panel>

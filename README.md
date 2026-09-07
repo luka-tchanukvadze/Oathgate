@@ -53,10 +53,18 @@ Worth clicking, in this order:
 | Payments, then any row | One payment from start to finish: what arrived on the blockchain, the ledger rows it wrote, and the webhooks it sent |
 | Balance | A balance next to the ledger entries it is calculated from |
 | Developers, then Webhooks | Every delivery attempt, when the next retry is due, and the signature that was sent |
+| The search box | Type a sentence rather than an id: `paid payments over 50 GEL last week` |
 
 The workspace is yours alone and lasts 24 hours, which is long enough to
 integrate against it from your own code. If you want one that does not expire,
 get in touch and I will set it up.
+
+A language model reads what you type there, turns it into a filter, and prints
+the filter it settled on, so a misreading is something you can see rather than
+something that quietly returns the wrong rows. It runs on a free tier, and when
+that is unavailable the box goes back to matching your text literally instead of
+failing. If you catch it doing that and want the full thing, tell me and I will
+bring it back.
 
 ### 2. The API
 
@@ -208,7 +216,8 @@ background check writes the rows that undo it.
 
 NestJS 11, Prisma 7 with driver adapters, PostgreSQL 17, Redis 7, BullMQ,
 Next.js 15, TanStack Query, Tailwind. Docker, GitHub Actions on native arm64
-runners, Watchtower, Cloudflare Tunnel.
+runners, Watchtower, Cloudflare Tunnel. Groq reads the search box, and the
+gateway works the same with it switched off.
 
 ## Scope
 
