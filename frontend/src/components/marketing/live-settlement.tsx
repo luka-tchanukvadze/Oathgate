@@ -9,11 +9,17 @@ import { cn } from '@/lib/utils';
 // Nothing here is fetched: it is a fixed script on a loop, and the same script
 // is what the demo actually does
 
+// Every line is kept under the width the panel holds at its widest, because a
+// line that wraps puts its own continuation backslash on a line of its own and
+// the block stops looking like something anyone would type
 const REQUEST = [
-  'curl -X POST https://oathgate-api.tchanu.com/api/v1/payments \\',
+  'curl -X POST \\',
+  '  https://oathgate-api.tchanu.com/api/v1/payments \\',
   '  -H "Authorization: Bearer sk_test_..." \\',
   '  -H "Idempotency-Key: 8c1f-4a20" \\',
-  "  -d '{\"fiatAmount\": \"1050\", \"fiatCurrency\": \"GEL\", \"cryptoCurrency\": \"BTC\"}'",
+  '  -d \'{"fiatAmount": "1050",',
+  '       "fiatCurrency": "GEL",',
+  '       "cryptoCurrency": "BTC"}\'',
 ].join('\n');
 
 const ADDRESS = 'tb1q8xk2m9v4rj7wq3nz6ha0plc5dus2eg4tyx';
@@ -89,13 +95,15 @@ export function LiveSettlement() {
       </div>
 
       <div className="rounded-[0.75rem] bg-(--hero-well) px-4 py-3.5 pt-4">
-        <div className="mb-2.5 flex items-center gap-2.5">
-          <span className="hero-dot" aria-hidden />
-          {/* leading-none, so the line box is the size of the letters
-              Capitals have nothing below the baseline, so the empty descender
-              space in a normal line box drags a centred dot below the text */}
+        {/* The method carries the colour, the way an api reference labels a
+            route. It is the word worth reading first, and it does the job a
+            coloured dot next to it was doing without adding a shape */}
+        <div className="mb-2.5 flex items-baseline gap-2">
+          <span className="mono text-2xs font-semibold uppercase leading-none tracking-[0.14em] text-(--hero-accent)">
+            POST
+          </span>
           <span className="mono text-2xs uppercase leading-none tracking-[0.14em] text-(--hero-ink-faint)">
-            POST /v1/payments
+            /v1/payments
           </span>
         </div>
 
@@ -156,7 +164,7 @@ export function LiveSettlement() {
 
       {/* Every row is laid out from the start and revealed in turn, so a new
           line never pushes the one under it */}
-      <ul className="space-y-2 px-4 pb-4 pt-3.5">
+      <ul className="px-4 pb-4 pt-2">
         <LogLine
           show={reached('mempool')}
           tone="wait"
@@ -205,6 +213,11 @@ export function LiveSettlement() {
 // A step that has not happened yet is rendered and hidden rather than left out
 // visibility keeps the box, so the four rows always occupy the same height and
 // nothing below a new line moves when it arrives
+//
+// The state is carried by the colour of the value rather than by a dot in front
+// of the label. The number is the thing that changed, so it is the thing worth
+// colouring, and four rows ruled off from each other read as output from a
+// machine instead of as a list somebody wrote
 function LogLine({
   show,
   tone,
@@ -221,21 +234,19 @@ function LogLine({
       className={cn(
         // An explicit line height, because half these rows mix the monospace
         // face into the body one and the taller of the two would otherwise set
-        // the row height and shift the dot against its own text
-        'flex items-center gap-2.5 text-xs leading-5 text-(--hero-ink-muted)',
+        // the row height and leave the rules unevenly spaced
+        'flex items-center justify-between gap-3 border-t border-(--hero-line) py-2 text-xs leading-5 text-(--hero-ink-muted) first:border-t-0',
         show ? 'hero-rise' : 'invisible',
       )}
     >
+      <span className="truncate">{label}</span>
       <span
         className={cn(
-          'size-1.5 shrink-0 rounded-full',
-          tone === 'ok' ? 'bg-(--hero-ok)' : 'bg-(--hero-wait)',
+          'mono shrink-0',
+          tone === 'ok' ? 'text-(--hero-ok)' : 'text-(--hero-wait)',
         )}
-        aria-hidden
-      />
-      <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
-        <span className="truncate">{label}</span>
-        <span className="mono shrink-0">{value}</span>
+      >
+        {value}
       </span>
     </li>
   );
