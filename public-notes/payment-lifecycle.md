@@ -13,7 +13,7 @@
    EXPIRED                                 PAID
                                              |
                                              | confirmed money disappears
-   UNDERPAID  <-- not enough, after an hour  v
+   UNDERPAID  <-- short, an hour past expiry  v
                                           REVERSED
 ```
 
@@ -22,7 +22,7 @@
 | `PENDING` | Created, nothing has arrived |
 | `CONFIRMING` | Something arrived, not yet deep enough |
 | `PAID` | Settled. Ledger written, merchant credited, webhook sent |
-| `UNDERPAID` | Money arrived, an hour passed, still short |
+| `UNDERPAID` | Money arrived, the quote ran out an hour ago, still short |
 | `EXPIRED` | The quote ran out and nothing ever arrived |
 | `REVERSED` | It was `PAID` and the chain changed its mind |
 | `FAILED` | Something went wrong that is not one of the above |
@@ -118,10 +118,12 @@ rather than needing special cases.
 **Overpaid** is credited to the merchant. The customer sent it, the merchant is
 owed it. Keeping the difference would be the gateway quietly taking money.
 
-**Underpaid** waits an hour before it is marked, because the rest of the money
-may still be in flight. A customer paying from two wallets, or a wallet batching
-its sends, is normal. After an hour it is a real shortfall and the merchant is
-told.
+**Underpaid** waits an hour past the quote's expiry before it is marked, because
+the rest of the money may still be in flight. A customer paying from two wallets,
+or a wallet batching its sends, is normal. The clock runs from expiry rather than
+from the first coin arriving, so a payment created at noon with a fifteen minute
+quote is not called short until around 13:15. After that it is a real shortfall
+and the merchant is told.
 
 Settlement credits **what actually arrived**, not what was owed, and refuses if
 the arrived amount does not cover the owed amount.

@@ -21,6 +21,10 @@ that accepts either credential is a route where a mistake in one path is
 exploitable through the other. Splitting them means the question "can a browser
 reach this" is answered by the URL.
 
+One route sits under `/api/dashboard` and takes no cookie: creating a sandbox,
+because the call is what brings the account into existence and there is nobody
+to authenticate yet. It is listed with the other two open routes further down.
+
 The reason it matters: a secret API key must never be in browser JavaScript,
 because anything in browser JavaScript is readable by anyone. So the dashboard
 cannot hold one, which is why it has a cookie instead.
@@ -125,9 +129,14 @@ route returns 403.
 
 ### `POST /api/v1/payments/:id/reverse`
 
-A refund. Takes `{ "reason": "..." }`, between 3 and 200 characters, which
-travels into the `payment.reversed` webhook so the merchant's own server finds
-out why the money went back.
+Undoes a settlement in the books. Takes `{ "reason": "..." }`, between 3 and 200
+characters, which travels into the `payment.reversed` webhook so the merchant's
+own server finds out why.
+
+**No Bitcoin moves.** This writes the entries that take the credit back and sets
+the payment to REVERSED. Sending coins to a customer is a separate transaction
+the merchant makes from their own wallet, and Oathgate never holds a key that
+could send one.
 
 Nothing is deleted. The original ledger pair stays and an opposite pair is
 written next to it, each new entry naming the one it undoes, so the balance
@@ -169,6 +178,8 @@ side of it you are on.
 | `GET /api/dashboard/webhook-deliveries?mode=TEST` | Delivery log |
 | `GET /api/dashboard/webhook-deliveries/:id` | One delivery, with the exact body that was signed and every attempt |
 | `POST /api/dashboard/webhook-deliveries/:id/replay` | Queues it again. Returns 202 |
+| `GET /api/dashboard/search/payments?mode=TEST&q=...` | Payments matching an id, a reference, an address, or a question in plain English. Twenty a minute |
+| `GET /api/dashboard/search/availability` | Whether the search box can read a sentence at the moment |
 
 The detail route returns four things in one response on purpose. Four separate
 calls would each read at their own moment, and a settlement landing between two

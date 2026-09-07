@@ -22,11 +22,11 @@ oathgate-signature: t=1755432000,v1=8f3a2c1e4b...
 {
   "id": "0198f0c4-...",
   "type": "payment.completed",
-  "created": "2026-09-04T12:04:11.000Z",
+  "createdAt": "2026-09-04T12:04:11.000Z",
   "data": {
     "paymentId": "0198f0c2-...",
-    "reference": "order-4417",
-    "status": "PAID",
+    "merchantId": "0198f0b1-...",
+    "mode": "TEST",
     "fiatAmount": "1050",
     "fiatCurrency": "GEL",
     "fiatExponent": 2,
@@ -36,10 +36,20 @@ oathgate-signature: t=1755432000,v1=8f3a2c1e4b...
 }
 ```
 
+`mode` is `TEST` or `LIVE`, so one endpoint can serve both and a test payment
+can never be mistaken for a real one.
+
+Ignore any field you do not recognise. More can appear in `data`, and a new one
+is not a breaking change.
+
 `fiatExponent` is there so a consumer can format without a currency table.
 `1050` with an exponent of `2` comes out as `10.50`. Some currencies have three
 decimal places and some have none, and making every consumer know that is
 making every consumer get it wrong.
+
+The two amounts are both strings. A JSON number is a double on the far side and
+satoshis outgrow one, so parse them as integers rather than letting a language
+turn them into floats on the way in.
 
 ## Verifying the signature
 

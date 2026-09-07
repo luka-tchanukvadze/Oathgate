@@ -10,7 +10,7 @@ npm run test:e2e
 Needs Postgres and Redis running, and Node 24 or newer. The reason for 24 is in
 [deployment.md](deployment.md#the-pipeline).
 
-Four suites, and one of them is the point.
+Five suites, and one of them is the point.
 
 ## The concurrency test
 

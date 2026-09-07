@@ -103,21 +103,37 @@ a difference between the two has found a bug.
 
 ## The lock
 
-Settlement runs inside a transaction that begins by locking the account row:
+Settlement runs inside a transaction that takes two locks, in a fixed order.
+
+First the payment itself:
 
 ```sql
-SELECT * FROM account WHERE id = $1 FOR UPDATE
+SELECT * FROM payment WHERE id = $1 AND merchant_id = $2 FOR UPDATE
 ```
 
-`FOR UPDATE` takes a row-level lock that is held until the transaction commits.
-A second transaction that asks for the same row waits.
+Then, inside the ledger write, one lock per account the money moves between:
+
+```sql
+SELECT id FROM account WHERE id = $1 FOR UPDATE
+```
+
+`FOR UPDATE` takes a row-level lock held until the transaction commits. A second
+transaction asking for the same row waits.
 
 Without it, two settlements for one payment can both read a balance of 0, both
 add 3692, and both write 3692. The merchant is paid once and credited twice.
 
-This is the one place in the system that uses raw SQL rather than Prisma's
-query builder. Prisma has no `FOR UPDATE`, and the alternative, a serializable
-isolation level with retry loops, is more machinery for a weaker guarantee.
+**The order is the interesting part.** The payment row is always taken first,
+and the account rows are always taken sorted by id. Two transactions that take
+the same locks in opposite orders each hold what the other is waiting for, and
+neither can move. Postgres notices and kills one, but a deadlock that never
+happens beats a deadlock that is handled.
+
+Raw SQL appears in four places, all of them for something Prisma's query builder
+cannot say: these two locks, the `FOR UPDATE SKIP LOCKED` the outbox relay uses
+to claim a batch nobody else is working on, and `nextval` for the address
+derivation index. The alternative to `FOR UPDATE`, a serializable isolation
+level with retry loops, is more machinery for a weaker guarantee.
 
 There is a test that proves the lock does something. It is described in
 [testing.md](testing.md), and the first version of it was worthless.

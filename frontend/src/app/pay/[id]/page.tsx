@@ -56,7 +56,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
     return (
       <Shell>
         <p className="text-center text-sm text-ink-subtle">
-          This payment link is not valid, or the demo data has been reset.
+          This payment link is not valid or has expired.
         </p>
       </Shell>
     );
@@ -91,7 +91,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
             </span>
             <p className="text-base font-semibold text-ink">Payment received</p>
             <p className="max-w-xs text-sm text-ink-subtle">
-              Confirmed on chain and settled to the merchant. They have already been notified.
+              Confirmed on chain and settled to the merchant.
             </p>
           </div>
         ) : (
@@ -137,7 +137,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
               <div className="mt-5 border-t border-line pt-5">
                 <Button className="w-full" onClick={() => simulate.mutate()} loading={simulate.isPending}>
                   <PlayCircle className="size-4" aria-hidden />
-                  Simulate paying this
+                  Simulate a customer payment
                 </Button>
                 {/* The button is the fast path. Saying the slow path exists is
                     what stops someone assuming the whole thing is a mock */}
@@ -152,7 +152,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
       </div>
 
       <p className="mt-4 text-center text-xs text-ink-subtle">
-        Secured by Oathgate. Bitcoin signet, no real funds.
+        Secured by Oathgate. Bitcoin signet, a test network where coins are worth nothing.
       </p>
     </Shell>
   );

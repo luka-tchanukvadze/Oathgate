@@ -98,14 +98,14 @@ export default function LoginPage() {
 
         <div className="mt-6 text-center">
           <p className="text-xs text-ink-subtle">
-            There is no sign up. The button below gives you the same
-            dashboard and the same API keys.
+            There is no signup. The button below opens a workspace of your own,
+            with the same dashboard and its own API keys.
           </p>
 
           <div className="mt-5 flex justify-center">
             <StartSandboxButton
               className="inline-flex h-10 items-center gap-2 rounded-full px-5 text-sm font-semibold text-ink ring-1 ring-line transition-colors hover:bg-canvas disabled:opacity-70"
-              label="Open a sandbox instead"
+              label="Open the demo instead"
             />
           </div>
         </div>

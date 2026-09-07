@@ -641,7 +641,7 @@ export const mock = {
           detail: 'Consumed from pub/sub. Delivery is at least once, so this consumer is idempotent',
           paymentId: payment.id,
           at: new Date(new Date(entry.createdAt).getTime() + 1400).toISOString(),
-          meta: { template: 'payment_settled' },
+          meta: { template: 'payment_completed' },
         });
       }
     }

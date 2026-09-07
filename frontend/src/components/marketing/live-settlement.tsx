@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 const REQUEST = [
   'curl -X POST \\',
   '  https://oathgate-api.tchanu.com/api/v1/payments \\',
+  '  -H "Content-Type: application/json" \\',
   '  -H "Authorization: Bearer sk_test_..." \\',
   '  -H "Idempotency-Key: 8c1f-4a20" \\',
   '  -d \'{"fiatAmount": "1050",',
@@ -200,7 +201,7 @@ export function LiveSettlement() {
           tone="ok"
           label={
             <>
-              Signed <span className="mono">payment.settled</span> delivered
+              Signed <span className="mono">payment.completed</span> delivered
             </>
           }
           value="200"

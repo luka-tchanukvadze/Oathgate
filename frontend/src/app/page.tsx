@@ -142,8 +142,8 @@ export default function LandingPage() {
               </div>
 
               <p className="mt-5 text-xs text-(--hero-ink-faint)">
-                No signup. Signet coins are free and worth nothing, and the blocks confirming them
-                are real.
+                No signup. The coins are free from a signet faucet and worth nothing. The blocks
+                confirming them are real.
               </p>
             </div>
 

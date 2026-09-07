@@ -15,7 +15,7 @@ function describe(error: unknown): { title: string; detail: string } {
   if (error instanceof ApiError) {
     if (error.status === 429) {
       return {
-        title: 'A few sandboxes came from this address already',
+        title: 'This address has already opened a few workspaces',
         detail: 'Try again in an hour, or sign in if you have an account',
       };
     }
@@ -25,7 +25,7 @@ function describe(error: unknown): { title: string; detail: string } {
 
   return {
     title: 'Could not reach the API',
-    detail: 'Nothing answered, so it is either down or not reachable from here',
+    detail: 'Nothing answered, so the API is down or unreachable from here',
   };
 }
 

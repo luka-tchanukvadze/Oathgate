@@ -191,7 +191,7 @@ export default function HomePage() {
       fg: 'var(--neutral-fg)',
     },
     {
-      label: 'Reversed by a reorg',
+      label: 'Reversed by the chain',
       count: stats.needsAttention.reversed.length,
       why: 'The chain reorganised and a confirmed payment turned out not to be real.',
       status: 'REVERSED',

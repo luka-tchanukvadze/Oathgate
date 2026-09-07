@@ -13,7 +13,7 @@ const PARTIES = [
   },
   {
     who: 'The merchant',
-    what: 'A shop that wants to accept Bitcoin. They sign up, take an API key, and call the API from their checkout. This dashboard is theirs.',
+    what: 'A shop that wants to accept Bitcoin. They take an API key and call the API from their checkout. This dashboard is theirs.',
   },
   {
     who: 'The customer',
@@ -40,7 +40,7 @@ const FLOW = [
   {
     n: '04',
     title: 'We wait for confirmations',
-    body: 'Each new block on top of the payment makes it harder to reverse. At three blocks we treat it as final. This is the part card payments have no equivalent of.',
+    body: 'Each block mined on top makes the payment harder to undo, because undoing it means rebuilding every block since. One block is already worth far more than a coffee, so that is where this settles. Card payments have no equivalent of this step.',
   },
   {
     n: '05',
@@ -100,14 +100,16 @@ export default function GuidePage() {
           </PanelHeader>
           <PanelBody>
             <ul className="space-y-2.5 text-sm leading-relaxed text-ink-muted">
-              <li>Hold customer funds. There is no custody here.</li>
+              <li>Give a customer an account. They pay once and register nothing.</li>
               <li>Exchange Bitcoin into lari and wire it to a bank.</li>
               <li>Identity checks, sanctions screening, licensing.</li>
               <li>Card terminals or a consumer wallet app.</li>
             </ul>
             <p className="mt-4 border-t border-line pt-4 text-sm leading-relaxed text-ink-muted">
-              Oathgate is the settlement engine. Custody, treasury and compliance are separate concerns, and
-              keeping them out of this codebase is deliberate rather than incidental.
+              Oathgate is the settlement engine. Between a payment settling and a merchant being paid out
+              the coins sit in the gateway wallet and the balance is money owed, which is custody, and is
+              most of why mainnet needs arrangements this project does not have. Treasury and compliance
+              stay outside this codebase.
             </p>
           </PanelBody>
         </Panel>
@@ -146,7 +148,8 @@ export default function GuidePage() {
               do not switch anything to do it, and you do not need to own Bitcoin.
             </p>
             <p>
-              Mainnet settles in Bitcoin that is worth money, which means Oathgate holds customer funds.
+              Mainnet settles in Bitcoin that is worth money, which means Oathgate holds real money on your
+              behalf between settlement and payout.
               Activation requires custody arrangements and regulatory approval, and is not enabled for this
               workspace.
             </p>
@@ -169,7 +172,7 @@ export default function GuidePage() {
               </li>
               <li>
                 <span className="font-medium text-ink">2.</span> Call{' '}
-                <span className="mono text-xs">POST /v1/payments</span> from their checkout and get back an
+                <span className="mono text-xs">POST /v1/payments</span> from your checkout and get back an
                 address and an amount.
               </li>
               <li>
@@ -181,12 +184,12 @@ export default function GuidePage() {
                 the payment confirm.
               </li>
               <li>
-                <span className="font-medium text-ink">5.</span> Point a webhook at their server so the shop
+                <span className="font-medium text-ink">5.</span> Point a webhook at your server so your shop
                 marks the order paid on its own.
               </li>
               <li>
-                <span className="font-medium text-ink">6.</span> Activate the account and swap the test key
-                for a live one. Nothing else in the integration changes.
+                <span className="font-medium text-ink">6.</span> On a live account, swapping the test key for a
+                live one is the whole change. Nothing else in your integration moves.
               </li>
             </ol>
           </PanelBody>
@@ -206,14 +209,18 @@ export default function GuidePage() {
           <p>
             One thing here stands in for something outside the system: the{' '}
             <span className="font-medium text-ink">Simulate customer payment</span> button on a pending
-            payment. In normal use a person sends coins from their own wallet, and that button does the
-            same on their behalf so you can watch a payment settle in about ten seconds. Sending real
-            signet coins to the address instead takes a few minutes and produces an identical result,
-            because Oathgate cannot tell the two apart.
+            payment. In normal use a person sends coins from their own wallet. That button skips the
+            chain and settles directly, so you can watch a payment complete in about ten seconds instead
+            of waiting for a block.
           </p>
           <p>
-            Everything the button triggers afterwards is the real path: the same confirmations, the same
-            ledger entries, the same webhook.
+            Everything after that point is the real path: the same ledger entries, the same balance, the
+            same signed webhook. The one visible difference is that a simulated payment has no
+            transaction on the chain, so the on-chain card on its detail page stays empty.
+          </p>
+          <p>
+            Sending real signet coins to the address instead takes a few minutes and fills that card in.
+            It is the more honest way to try this, and it costs nothing.
           </p>
           <p>
             The search box reads plain English as well as ids.{' '}

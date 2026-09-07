@@ -162,7 +162,7 @@ so it cannot read a payment even by mistake.
 
 ## The parts I am most proud of
 
-**A ledger that cannot lose money.** Every movement writes two rows that add up
+**A ledger that has to balance.** Every movement writes two rows that add up
 to zero. Rows are never updated and never deleted. The balance column is a cache
 that must always be reproducible by adding up the entries. Undoing a payment
 writes a matching pair of reversal rows instead of deleting anything.

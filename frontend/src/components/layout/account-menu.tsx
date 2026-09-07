@@ -114,8 +114,8 @@ export function AccountMenu({
             <div className="flex items-start gap-2 border-b border-line px-3 py-2 text-2xs text-ink-subtle">
               <Clock className="mt-px size-3 shrink-0" aria-hidden />
               <span>
-                Sandbox workspace. It stops working {timeLeft(expiresAt)}, and nothing
-                in it is yours to keep.
+                Demo workspace. It stops working {timeLeft(expiresAt)}, and its API keys
+                stop working with it.
               </span>
             </div>
           )}
