@@ -3,13 +3,14 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, X } from 'lucide-react';
+import { Search, Sparkles, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { SidebarNav } from './sidebar';
 import { BottomNav } from './bottom-nav';
 import { Logo } from './logo';
 import { AccountMenu } from './account-menu';
 import { getMerchant } from '@/lib/api/merchant';
+import { getAiAvailability } from '@/lib/api/search';
 import { queryKeys } from '@/lib/api/queryKeys';
 import { ModeToggle } from '@/components/ui/mode-toggle';
 import { Dialog } from '@/components/ui/dialog';
@@ -23,6 +24,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     queryKey: queryKeys.merchant(),
     queryFn: getMerchant,
   });
+  // Held for a minute rather than asked on every navigation. The mark is
+  // cosmetic, so a stale answer costs a wrong icon and never a failed search
+  const { data: ai } = useQuery({
+    queryKey: queryKeys.aiAvailability(),
+    queryFn: getAiAvailability,
+    staleTime: 60_000,
+  });
+  const aiOn = ai?.ai ?? false;
+
   const [searchOpen, setSearchOpen] = useState(false);
   const [liveInfo, setLiveInfo] = useState(false);
   const [term, setTerm] = useState('');
@@ -86,24 +96,40 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                     ref={searchRef}
                     value={term}
                     onChange={(e) => setTerm(e.target.value)}
-                    placeholder="Search payments, references, addresses"
+                    placeholder={
+                      aiOn
+                        ? 'Search, or describe what you are after'
+                        : 'Search payments, references, addresses'
+                    }
                     aria-label="Search"
-                    className="h-10 w-full rounded-full bg-surface-muted pl-10 pr-10 text-sm text-ink outline-none ring-accent/45 placeholder:text-ink-faint focus:bg-surface focus:ring-2"
+                    className="h-10 w-full rounded-full bg-surface-muted pl-10 pr-16 text-sm text-ink outline-none ring-accent/45 placeholder:text-ink-faint focus:bg-surface focus:ring-2"
                   />
 
-                  {term && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTerm('');
-                        searchRef.current?.focus();
-                      }}
-                      aria-label="Clear search"
-                      className="absolute right-1.5 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-full text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
-                    >
-                      <X className="size-3.5" aria-hidden />
-                    </button>
-                  )}
+                  <div className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center gap-0.5">
+                    {aiOn && (
+                      <span
+                        title="This box reads plain English"
+                        className="grid size-7 place-items-center rounded-full text-accent"
+                      >
+                        <Sparkles className="size-3.5" aria-hidden />
+                        <span className="sr-only">Natural language search is available</span>
+                      </span>
+                    )}
+
+                    {term && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTerm('');
+                          searchRef.current?.focus();
+                        }}
+                        aria-label="Clear search"
+                        className="grid size-7 place-items-center rounded-full text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
+                      >
+                        <X className="size-3.5" aria-hidden />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </form>
 
@@ -145,10 +171,20 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           <input
             value={term}
             onChange={(e) => setTerm(e.target.value)}
-            placeholder="Payment id, reference or address"
+            placeholder={
+              aiOn ? 'Id, reference, or a plain English question' : 'Payment id, reference or address'
+            }
             aria-label="Search payments"
             className="h-11 w-full rounded-well border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
           />
+
+          {aiOn && (
+            <p className="mt-2 flex items-center gap-1.5 text-xs text-ink-subtle">
+              <Sparkles className="size-3 text-accent" aria-hidden />
+              Try &ldquo;paid payments over 50 GEL last week&rdquo;
+            </p>
+          )}
+
           <Button type="submit" className="mt-3 w-full">
             Search
           </Button>

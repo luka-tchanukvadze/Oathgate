@@ -8,3 +8,4 @@ export * from './webhooks';
 export * from './insights';
 export * from './events';
 export * from './merchant';
+export * from './search';

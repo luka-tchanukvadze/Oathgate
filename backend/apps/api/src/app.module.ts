@@ -15,6 +15,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { PingModule } from './ping/ping.module';
 import { SandboxModule } from './sandbox/sandbox.module';
 import { RatesModule } from './rates/rates.module';
+import { SearchModule } from './search/search.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 
 @Module({
@@ -33,6 +34,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     PingModule,
     RatesModule,
     PaymentsModule,
+    SearchModule,
     WebhooksModule,
   ],
   controllers: [AppController],
