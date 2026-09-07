@@ -14,14 +14,16 @@ const BOOT_TIMEOUT_MS = 5_000;
 // Free tier models get retired on somebody else's schedule, so this is a
 // starting point and not a promise
 // Overriding it is one environment variable and a restart, no code change
-const DEFAULT_MODEL = 'llama-3.3-70b-versatile';
+const DEFAULT_MODEL = 'openai/gpt-oss-120b';
 
 @Injectable()
 export class GroqClient {
   constructor(private readonly config: ConfigService) {}
 
+  // || rather than ??, because compose passes an unset variable through as an
+  // empty string and ?? would hand that straight to the api as the model name
   get model(): string {
-    return this.config.get<string>('GROQ_MODEL') ?? DEFAULT_MODEL;
+    return this.config.get<string>('GROQ_MODEL')?.trim() || DEFAULT_MODEL;
   }
 
   isConfigured(): boolean {
