@@ -77,6 +77,11 @@ jobs:
       - run: npm run lint -- --max-warnings 0
         working-directory: backend
 
+      # Ahead of the build, because these are the fast ones and a failure here
+      # should not wait on a compile
+      - run: npm test
+        working-directory: backend
+
       - run: npm run build
         working-directory: backend
 

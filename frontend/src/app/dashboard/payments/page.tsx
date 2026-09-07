@@ -4,7 +4,7 @@ import { Suspense, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Sparkles, X } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { Select } from '@/components/ui/field';
 import { ErrorState, StaleBanner } from '@/components/ui/error-state';
 import { PaymentsTable, sortPayments, type Sort, type SortKey } from '@/components/payments/payments-table';
 import { CreatePaymentDialog } from '@/components/payments/create-payment-dialog';
-import { listPayments, queryKeys } from '@/lib/api';
+import { listPayments, queryKeys, searchPayments } from '@/lib/api';
 import { useMode } from '@/hooks/use-mode';
 import { cn } from '@/lib/utils';
 import type { PaymentStatus } from '@/types';
@@ -49,7 +49,10 @@ const CURL = `curl -X POST https://oathgate-api.tchanu.com/api/v1/payments \\
 function PaymentsInner() {
   const { mode } = useMode();
   const params = useSearchParams();
-  const search = (params.get('q') ?? '').trim().toLowerCase();
+  // Left in the case it was typed, because the backend may read it as a
+  // sentence and lowercasing it here would only make that harder
+  const search = (params.get('q') ?? '').trim();
+  const searching = search.length > 0;
   const statusParam = (params.get('status') ?? '').toUpperCase();
 
   const [creating, setCreating] = useState(false);
@@ -68,27 +71,40 @@ function PaymentsInner() {
     queryFn: () => listPayments(mode),
     // Anything pending or confirming moves on its own
     refetchInterval: 4000,
+    enabled: !searching,
   });
 
+  // No polling and no refetch on focus, unlike the list above. A search can
+  // cost a call to a provider with a daily budget, so it runs when it is asked
+  // for and not on a timer
+  const results = useQuery({
+    queryKey: queryKeys.search(mode, search),
+    queryFn: () => searchPayments(mode, search),
+    enabled: searching,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+  });
+
+  const active = searching ? results : payments;
+
+  // The status and range controls still narrow a result set, but the text
+  // match itself is the backend's job now
+  //
+  // The rows are picked inside the memo rather than above it, because the ??
+  // fallback builds a new empty array every render and the memo would then
+  // never hit
   const filtered = useMemo(() => {
-    const rows = payments.data ?? [];
+    const rows = searching ? (results.data?.data ?? []) : (payments.data ?? []);
     const days = RANGES.find((r) => r.value === range)?.days ?? null;
     const cutoff = days === null ? null : Date.now() - days * DAY;
 
     return sortPayments(
       rows
         .filter((p) => (filter === 'ALL' ? true : p.status === filter))
-        .filter((p) => (cutoff === null ? true : new Date(p.createdAt).getTime() >= cutoff))
-        .filter((p) =>
-          search === ''
-            ? true
-            : p.id.toLowerCase().includes(search) ||
-              (p.reference ?? '').toLowerCase().includes(search) ||
-              p.address.toLowerCase().includes(search),
-        ),
+        .filter((p) => (cutoff === null ? true : new Date(p.createdAt).getTime() >= cutoff)),
       sort,
     );
-  }, [payments.data, filter, range, search, sort]);
+  }, [searching, results.data, payments.data, filter, range, sort]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount - 1);
@@ -105,9 +121,10 @@ function PaymentsInner() {
 
   // A first load that fails has nothing to fall back on, so it takes over the
   // card. A failed refetch keeps the old rows and just says they are stale
-  const hasFilters = Boolean(search) || filter !== 'ALL' || range !== 'all';
-  const hardError = payments.isError && !payments.data;
-  const staleError = payments.isError && Boolean(payments.data);
+  const hasFilters = searching || filter !== 'ALL' || range !== 'all';
+  const loaded = searching ? results.data !== undefined : payments.data !== undefined;
+  const hardError = active.isError && !loaded;
+  const staleError = active.isError && loaded;
 
   return (
     <>
@@ -122,15 +139,24 @@ function PaymentsInner() {
         }
       />
 
-      {staleError && <StaleBanner onRetry={() => payments.refetch()} retrying={payments.isFetching} />}
+      {staleError && <StaleBanner onRetry={() => active.refetch()} retrying={active.isFetching} />}
 
-      {(search || filter !== 'ALL' || range !== 'all') && (
+      {hasFilters && (
         <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
-          {search && (
-            <span className="text-ink-subtle">
-              Matching <span className="mono text-ink">{search}</span>
-            </span>
-          )}
+          {searching &&
+            (results.data?.interpretation ? (
+              // What the backend filtered on, not what the model said it did.
+              // The sentence is built from the filter that actually ran, so
+              // the two can never drift apart
+              <span className="inline-flex items-center gap-1.5 text-ink-subtle">
+                <Sparkles className="size-3.5 text-accent" aria-hidden />
+                Read as <span className="text-ink">{results.data.interpretation}</span>
+              </span>
+            ) : (
+              <span className="text-ink-subtle">
+                Matching <span className="mono text-ink">{search}</span>
+              </span>
+            ))}
           <Link
             href="/dashboard/payments"
             onClick={() => {
@@ -188,14 +214,14 @@ function PaymentsInner() {
         {hardError ? (
           <ErrorState
             title="Could not load payments"
-            error={payments.error}
-            onRetry={() => payments.refetch()}
-            retrying={payments.isFetching}
+            error={active.error}
+            onRetry={() => active.refetch()}
+            retrying={active.isFetching}
           />
         ) : (
           <PaymentsTable
             payments={visible}
-            loading={payments.isLoading}
+            loading={active.isLoading}
             sort={sort}
             onSort={toggleSort}
             filtered={hasFilters}
