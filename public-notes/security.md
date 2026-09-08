@@ -29,15 +29,16 @@ live dashboard shows test money, or worse, a test key reaches a live row.
 "Not yours" and "does not exist" return the same 404 on purpose. Different
 answers would let someone enumerate which ids are real.
 
-There is one place this looks redundant and is not. The dashboard's confirm
-route does a scoped read whose result is thrown away:
+There is one place this looks redundant and is not. A handler that already has
+the id it needs still does a scoped read first and throws the result away:
 
 ```ts
 await this.payments.get(session.merchantId, query.mode, id);
 ```
 
-Without it, a live payment id sent with `?mode=TEST` would clear the test-only
-check and settle real money. The discarded read is what turns that into a 404.
+The read **is** the check. Scoping it to the merchant and the mode is what turns
+a row that is not theirs into a 404 before anything acts on it, so an editor
+tidying away an unused call would be deleting a guard.
 
 ## Credentials
 
@@ -78,8 +79,12 @@ per core. A slow loop alone parallelises. A memory-hungry one does not.
 
 A **row in Postgres**, not a JWT.
 
-A JWT cannot be revoked. Once it is issued it is valid until it expires, so
+A JWT carries no way to revoke itself. Nothing is consulted when it is
+presented, which is the whole point of one, so it stays valid until it expires:
 signing out is a lie the client tells itself, and a stolen token stays good.
+
+It can be revoked, but only by keeping a list of the ones no longer welcome and
+checking it on every request, which is the database read a JWT exists to avoid.
 Short expiries plus refresh tokens get some of it back and add real complexity.
 
 A session row can be deleted. Signing out actually signs you out, and so does
@@ -146,8 +151,9 @@ Nothing reaches the machine directly. A tunnel makes an outbound connection to
 Cloudflare, so there is no inbound port open and the origin address is never
 exposed.
 
-`.env` and every secret file are gitignored and always have been. No secret is
-in the repository or in its history.
+`.env` and every secret file are gitignored and always have been. The only
+environment files ever committed are the `.env.example` templates, and every
+value in those is a placeholder.
 
 `NODE_ENV=production` in the image, so stack traces with file paths in them are
 never returned to a caller.

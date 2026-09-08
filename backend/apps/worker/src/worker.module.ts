@@ -13,6 +13,7 @@ import { BlockstreamClient } from './chain/blockstream.client';
 import { ChainReorgService } from './chain/chain-reorg.service';
 import { ChainSettlementService } from './chain/chain-settlement.service';
 import { ChainWatcherService } from './chain/chain-watcher.service';
+import { IdempotencyExpiryService } from './idempotency/idempotency-expiry.service';
 import { ExpiryService } from './payments/expiry.service';
 import { SandboxExpiryService } from './sandbox/sandbox-expiry.service';
 import { OutboundHostService } from './webhooks/outbound-host.service';
@@ -38,6 +39,7 @@ import { WebhookSenderService } from './webhooks/webhook-sender.service';
     ChainSettlementService,
     ChainWatcherService,
     ExpiryService,
+    IdempotencyExpiryService,
     SandboxExpiryService,
     OutboundHostService,
     OutboxRelayService,

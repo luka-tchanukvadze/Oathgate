@@ -137,23 +137,36 @@ export class WebhookSenderService {
           // No pooling, or a later delivery could inherit a socket opened
           // before the name was repointed
           agent: false,
-          timeout: SEND_TIMEOUT_MS,
         },
         (response) => {
-          // Nothing reads the body, and leaving it unread holds the socket open
-          response.resume();
+          const status = response.statusCode ?? 0;
 
-          resolve(response.statusCode ?? 0);
+          // Dropped rather than drained
+          // The status is the whole answer, and reading a body I do not want
+          // lets a receiver hold the connection open by sending one for ever
+          response.destroy();
+
+          settle(() => resolve(status));
         },
       );
 
-      // The timeout only fires the event, so the socket has to be torn down
-      // here or the delivery waits for the merchant's server for ever
-      request.on('timeout', () => {
+      // One deadline over the whole exchange, set here rather than through the
+      // socket timeout option
+      // That option measures silence, so a receiver dribbling a byte every few
+      // seconds keeps resetting it and never counts as slow
+      //
+      // Declared after the request because it tears that request down, and read
+      // only from callbacks, which cannot run before the line below
+      const deadline = setTimeout(() => {
         request.destroy(new Error(`no answer within ${SEND_TIMEOUT_MS}ms`));
-      });
+      }, SEND_TIMEOUT_MS);
 
-      request.on('error', reject);
+      function settle(finish: () => void): void {
+        clearTimeout(deadline);
+        finish();
+      }
+
+      request.on('error', (error) => settle(() => reject(error)));
       request.end(body);
     });
   }

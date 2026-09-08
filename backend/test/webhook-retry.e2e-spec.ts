@@ -9,6 +9,7 @@ import {
 } from '@jest/globals';
 import { lookup } from 'node:dns';
 import { createServer, type Server } from 'node:http';
+import { createServer as createSocketServer } from 'node:net';
 import { ConfigModule } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
@@ -17,8 +18,24 @@ import {
   PrismaModule,
   PrismaService,
   SecretCipher,
+  SEND_TIMEOUT_MS,
   WebhookDeliveryStatus,
 } from '@app/shared';
+
+// Raw sockets, because this has to send a reply no http server would write:
+// a status line and then header lines for ever, with the header block never
+// closed and the response therefore never complete
+function createSlowServer() {
+  return createSocketServer((socket) => {
+    socket.resume();
+    socket.write('HTTP/1.1 200 OK\r\n');
+
+    const dribble = setInterval(() => socket.write('X-Pad: a\r\n'), 300);
+
+    socket.on('close', () => clearInterval(dribble));
+    socket.on('error', () => clearInterval(dribble));
+  });
+}
 import { OutboundHostService } from '../apps/worker/src/webhooks/outbound-host.service';
 import { WebhookSenderService } from '../apps/worker/src/webhooks/webhook-sender.service';
 
@@ -196,6 +213,48 @@ describe('webhook delivery when the merchant is down', () => {
     expect(attempts.map((a) => a.attempt)).toEqual([1, 2, 3]);
     expect(attempts.every((a) => a.responseStatus === 500)).toBe(true);
   });
+
+  // A receiver that answers badly is one thing, a receiver that never finishes
+  // answering is another
+  // This one holds the connection by sending a header line every few seconds:
+  // the socket is never idle, so anything measuring silence waits for ever, and
+  // enough of them would take every worker slot there is
+  it(
+    'gives up on a receiver that never stops answering',
+    async () => {
+      const slow = createSlowServer();
+
+      await new Promise<void>((ready) => slow.listen(0, '127.0.0.1', ready));
+
+      const address = slow.address();
+
+      if (address === null || typeof address === 'string') {
+        throw new Error('the slow server did not take a port');
+      }
+
+      await prisma.webhookEndpoint.updateMany({
+        where: { merchantId },
+        data: { url: `http://127.0.0.1:${address.port}/hook` },
+      });
+
+      const startedAt = Date.now();
+      await sender.deliver(deliveryId);
+      const waited = Date.now() - startedAt;
+
+      await new Promise<void>((closed) => slow.close(() => closed()));
+
+      // Bounded, and the bound is the one I set rather than the receiver's
+      expect(waited).toBeLessThan(SEND_TIMEOUT_MS * 2);
+
+      const [attempt] = await prisma.webhookAttempt.findMany({
+        where: { deliveryId },
+      });
+
+      expect(attempt.responseStatus).toBeNull();
+      expect(attempt.error).toContain('no answer within');
+    },
+    SEND_TIMEOUT_MS * 3,
+  );
 
   it('does nothing when the delivery is already finished', async () => {
     await prisma.webhookDelivery.update({

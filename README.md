@@ -216,8 +216,8 @@ background check writes the rows that undo it.
 
 NestJS 11, Prisma 7 with driver adapters, PostgreSQL 17, Redis 7, BullMQ,
 Next.js 15, TanStack Query, Tailwind. Docker, GitHub Actions on native arm64
-runners, Watchtower, Cloudflare Tunnel. Groq reads the search box, and the
-gateway works the same with it switched off.
+runners, Cloudflare Tunnel. Groq reads the search box, and the gateway works
+the same with it switched off.
 
 ## Scope
 
