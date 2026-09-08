@@ -9,5 +9,8 @@ import { SearchController } from './search.controller';
   imports: [AuthModule],
   controllers: [SearchController],
   providers: [GroqClient, AiAvailabilityService, PaymentSearchService],
+  // The status screen reports whether the model is reachable, and reads the
+  // same breaker the search itself does rather than asking again
+  exports: [AiAvailabilityService],
 })
 export class SearchModule {}

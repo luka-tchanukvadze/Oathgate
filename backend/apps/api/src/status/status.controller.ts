@@ -1,68 +1,36 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import {
-  CHAIN_SETTLEMENT,
-  CHAIN_WATCHER,
-  HeartbeatService,
-  OUTBOX_RELAY,
-} from '@app/shared';
 import { SessionGuard } from '../auth/guards/session.guard';
+import { AiAvailabilityService } from '../search/ai-availability.service';
+import { SystemHealthService } from './system-health.service';
 
-// How quiet each job may go before I say so, and each is several missed turns
-// rather than one. A single slow sweep is not news, and a deploy restarts
-// everything at once, so a threshold that trips on one missed tick would cry
-// wolf every time I push
-const JOBS = [
-  {
-    name: CHAIN_WATCHER,
-    label: 'Watching the chain',
-    // Runs every 30 seconds
-    staleAfterMs: 3 * 60_000,
-    // What stops being true, said the way it affects a merchant rather than
-    // the way it looks from inside
-    effect: 'Payments sent on chain may not be noticed yet.',
-  },
-  {
-    name: CHAIN_SETTLEMENT,
-    label: 'Settling confirmed payments',
-    staleAfterMs: 3 * 60_000,
-    effect: 'Confirmed payments may not have been credited yet.',
-  },
-  {
-    name: OUTBOX_RELAY,
-    label: 'Sending webhooks',
-    // Runs every 5 seconds, so it may be called late far sooner
-    staleAfterMs: 60_000,
-    effect: 'Your server may not have been told about recent payments.',
-  },
-];
-
-// Behind the session guard. A public endpoint listing which parts of the system
-// are unwell is a status page written for people who are not customers
+// Behind the session guard, but a session is one click away for anybody, so
+// this is written as though it were public
+//
+// It answers whether, never why. Only what is currently wrong, named the way it
+// affects a merchant. No internal job names, no timestamps, no list of the
+// parts that are fine: a healthy system says nothing here beyond being healthy,
+// so a reader cannot learn its shape by asking when it is well
 @Controller('dashboard/status')
 @UseGuards(SessionGuard)
 export class StatusController {
-  constructor(private readonly heartbeat: HeartbeatService) {}
+  constructor(
+    private readonly health: SystemHealthService,
+    private readonly ai: AiAvailabilityService,
+  ) {}
 
   @Get()
   async status() {
-    const now = Date.now();
+    const { healthy, jobs } = await this.health.check();
 
-    const jobs = await Promise.all(
-      JOBS.map(async ({ name, label, staleAfterMs, effect }) => {
-        const lastRunAt = await this.heartbeat.lastBeat(name);
-
-        return {
-          name,
-          label,
-          effect,
-          // Never seen reads the same as long dead and wants the same warning
-          healthy:
-            lastRunAt !== null && now - lastRunAt.getTime() < staleAfterMs,
-          lastRunAt: lastRunAt?.toISOString() ?? null,
-        };
-      }),
-    );
-
-    return { healthy: jobs.every((job) => job.healthy), jobs };
+    return {
+      healthy,
+      degraded: jobs
+        .filter((job) => !job.healthy)
+        .map(({ label, effect }) => ({ label, effect })),
+      // The same value the mark in the search box already shows every visitor,
+      // so publishing it reveals nothing new. When it was last confirmed is
+      // kept on the service and out of here
+      search: this.ai.isAvailable(),
+    };
   }
 }

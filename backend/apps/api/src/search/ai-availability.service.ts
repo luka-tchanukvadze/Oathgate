@@ -17,6 +17,11 @@ export class AiAvailabilityService implements OnModuleInit {
   private healthy = false;
   private openedAt: number | null = null;
 
+  // Nothing polls, so this only moves when a real search happens or at boot.
+  // Reporting the state without saying when it was last confirmed would present
+  // an answer from this morning as an answer about now
+  private checkedAt: number | null = null;
+
   constructor(private readonly groq: GroqClient) {}
 
   onModuleInit(): void {
@@ -29,6 +34,11 @@ export class AiAvailabilityService implements OnModuleInit {
   // Cosmetic only: it reports the last thing I learned and gates nothing
   isAvailable(): boolean {
     return this.healthy;
+  }
+
+  // When that answer was last true of a real call, not of a guess
+  lastCheckedAt(): Date | null {
+    return this.checkedAt === null ? null : new Date(this.checkedAt);
   }
 
   // The mark in the dashboard must never gate this, or the feature switches
@@ -55,6 +65,7 @@ export class AiAvailabilityService implements OnModuleInit {
 
     this.healthy = true;
     this.openedAt = null;
+    this.checkedAt = Date.now();
   }
 
   recordFailure(reason: unknown): void {
@@ -64,6 +75,7 @@ export class AiAvailabilityService implements OnModuleInit {
 
     this.healthy = false;
     this.openedAt = Date.now();
+    this.checkedAt = Date.now();
   }
 
   private async check(): Promise<void> {

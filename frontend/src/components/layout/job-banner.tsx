@@ -20,7 +20,7 @@ export function JobBanner() {
     staleTime: 30_000,
   });
 
-  const stalled = status.data?.jobs.filter((job) => !job.healthy) ?? [];
+  const stalled = status.data?.degraded ?? [];
 
   // A failed request means nothing here. The API being unreachable is already
   // obvious from every other screen, and guessing at it would show this banner
@@ -44,7 +44,7 @@ export function JobBanner() {
         </p>
         <ul className="mt-1 space-y-0.5 leading-relaxed">
           {stalled.map((job) => (
-            <li key={job.name}>{job.effect}</li>
+            <li key={job.label}>{job.effect}</li>
           ))}
         </ul>
         <p className="mt-1.5 text-xs opacity-80">

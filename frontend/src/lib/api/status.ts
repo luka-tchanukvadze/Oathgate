@@ -1,17 +1,17 @@
 import { delay, http, USING_MOCK } from './client';
 
-export interface JobStatus {
-  name: string;
+export interface DegradedJob {
   label: string;
-  // What stops being true for a merchant while this job is quiet
+  // What stops being true for a merchant while this is quiet
   effect: string;
-  healthy: boolean;
-  lastRunAt: string | null;
 }
 
 export interface SystemStatus {
   healthy: boolean;
-  jobs: JobStatus[];
+  // Only what is currently wrong. Empty is the healthy answer, and the API
+  // deliberately does not list the parts that are fine
+  degraded: DegradedJob[];
+  search: boolean;
 }
 
 // Whether the background jobs that move money are still running
@@ -20,6 +20,9 @@ export interface SystemStatus {
 // on showing the last thing it wrote. Without this the first sign of trouble is
 // a merchant asking why a payment never settled
 export async function getStatus(): Promise<SystemStatus> {
-  if (USING_MOCK) return delay({ healthy: true, jobs: [] }, 80);
+  if (USING_MOCK) {
+    return delay({ healthy: true, degraded: [], search: false }, 80);
+  }
+
   return http<SystemStatus>('/api/dashboard/status');
 }

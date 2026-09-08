@@ -180,7 +180,7 @@ side of it you are on.
 | `POST /api/dashboard/webhook-deliveries/:id/replay` | Queues it again. Returns 202 |
 | `GET /api/dashboard/search/payments?mode=TEST&q=...` | Payments matching an id, a reference, an address, or a question in plain English. Twenty a minute |
 | `GET /api/dashboard/search/availability` | Whether the search box can read a sentence at the moment |
-| `GET /api/dashboard/status` | Whether the background jobs that move money are still running, and what stops being true while one is quiet |
+| `GET /api/dashboard/status` | Whether the background jobs that move money are still running, and what stops being true while one is not |
 
 The detail route returns four things in one response on purpose. Four separate
 calls would each read at their own moment, and a settlement landing between two
@@ -209,6 +209,22 @@ hundred rows and it is the most expensive thing an anonymous caller can ask for.
 Everything it makes is revoked a day later. Nothing is deleted, because a ledger
 entry is written once and never touched, and that rule does not get an exception
 for tidiness.
+
+## No key and no cookie either
+
+### `GET /api/health`
+
+One word, for an uptime checker. `200 {"status":"ok"}` when the gateway is doing
+its job, `503 {"status":"degraded"}` when it is not.
+
+It names nothing. Which part is unwell is a question for somebody who is already
+a merchant, and a public endpoint that answers it is a list of where to poke
+rather than a status page.
+
+The search feature is deliberately not part of that verdict. It falls back to
+matching text when the model provider is unavailable, so that is a feature
+switched off rather than a gateway that is unwell, and an alert firing for it is
+one that teaches you to ignore alerts.
 
 ## Conventions
 
