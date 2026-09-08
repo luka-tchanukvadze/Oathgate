@@ -143,6 +143,53 @@ describe('idempotency', () => {
     expect(retried).toEqual({ id: 'payment-1' });
   });
 
+  // The claim used to be released whenever anything in here threw, including
+  // the write that stores the answer
+  // By then the payment exists, so handing the key back invited the caller to
+  // retry and buy the same thing twice
+  it('keeps the key when the work succeeded and only the answer was lost', async () => {
+    let runs = 0;
+
+    // Everything real except the write that saves the response
+    const store = prisma.idempotencyKey;
+
+    const broken = {
+      idempotencyKey: {
+        create: store.create.bind(store),
+        findUnique: store.findUnique.bind(store),
+        deleteMany: store.deleteMany.bind(store),
+        update: () => Promise.reject(new Error('the database went away')),
+      },
+    } as unknown as PrismaService;
+
+    const flaky = new IdempotencyService(broken);
+
+    const call = {
+      merchantId,
+      key: 'lost-answer',
+      requestHash: hash('{"amount":"1050"}'),
+      successStatus: 201,
+      handler: () => {
+        runs += 1;
+
+        return Promise.resolve({ id: 'payment-1' });
+      },
+    };
+
+    await expect(flaky.run(call)).rejects.toThrow('the database went away');
+
+    // Still claimed, and still marked unfinished
+    const stored = await prisma.idempotencyKey.findUniqueOrThrow({
+      where: { merchantId_key: { merchantId, key: 'lost-answer' } },
+    });
+
+    expect(stored.responseStatus).toBe(0);
+
+    // The retry is told to ask again rather than being allowed to buy twice
+    await expect(idempotency.run(call)).rejects.toThrow('in flight');
+    expect(runs).toBe(1);
+  });
+
   it('tells a second caller to wait while the first is still running', async () => {
     let release: () => void = () => {};
     const held = new Promise<void>((done) => {

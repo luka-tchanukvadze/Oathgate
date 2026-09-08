@@ -70,7 +70,16 @@ export class HeartbeatService implements OnModuleDestroy {
   }
 
   async onModuleDestroy(): Promise<void> {
-    await this.redis.quit();
+    // quit sends a command, and there is nowhere to send it if the connection
+    // never came up, so shutting down while redis is already gone threw out of
+    // the shutdown hook
+    // Nothing here is worth keeping, so failing to say goodbye politely just
+    // means dropping the socket
+    try {
+      await this.redis.quit();
+    } catch {
+      this.redis.disconnect();
+    }
   }
 
   private key(name: string): string {

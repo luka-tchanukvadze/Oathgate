@@ -163,15 +163,20 @@ network. That is server-side request forgery if it is not checked.
 The obvious target is a cloud metadata endpoint, which on many providers hands
 out credentials to anything that asks from inside the machine.
 
-So the URL is checked when it is registered and again immediately before every
-send. Private ranges, loopback and link-local addresses are refused, and a
-hostname is resolved so that every address it answers with is checked too. A
-name is not an address, and whoever owns it can repoint it at any time, so
-checking only what the merchant typed would check the wrong thing.
+So a URL only reaches the internet. Anything that would point back at private
+or internal address space is refused, and refused when it is registered as well
+as when it is sent.
+
+Twice, because a name is not an address. Whoever owns a name can repoint it
+after I accepted it, so what the merchant typed is not necessarily what would be
+dialled.
+
+The interesting part is how the second check is done. Checking a name and then
+handing that name to an HTTP client resolves it twice and judges only the first
+answer, which leaves the connection unaccounted for. So the check **is** the
+resolver: the socket is given a lookup function that resolves the name, refuses
+what it does not like, and otherwise returns exactly the addresses it approved.
+One resolution, judged, then used.
 
 Redirects are not followed, because a URL that passed the check can still answer
 with a 302 pointing somewhere that would not have.
-
-One detail that caught me: an IPv6 literal in a URL is wrapped in brackets,
-`http://[::1]/`, and the brackets have to come off before the address is parsed.
-Without that, `[::1]` is not recognised as loopback and the check passes.

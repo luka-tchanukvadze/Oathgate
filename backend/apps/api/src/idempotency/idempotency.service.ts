@@ -32,20 +32,15 @@ export class IdempotencyService {
       return this.replay<T>(call);
     }
 
+    let result: T;
+
+    // Only the handler
+    // Releasing the claim is right while nothing has happened yet, and wrong
+    // the moment the payment exists: the store below used to sit inside this
+    // try, so a database blip while writing the response gave the key back and
+    // the retry made a second payment for the same order
     try {
-      const result = await call.handler();
-
-      await this.prisma.idempotencyKey.update({
-        where: {
-          merchantId_key: { merchantId: call.merchantId, key: call.key },
-        },
-        data: {
-          responseStatus: call.successStatus,
-          responseBody: result as Prisma.InputJsonValue,
-        },
-      });
-
-      return result;
+      result = await call.handler();
     } catch (error) {
       // The claim is released, or an unrelated failure blocks every retry
       await this.prisma.idempotencyKey.deleteMany({
@@ -58,6 +53,21 @@ export class IdempotencyService {
 
       throw error;
     }
+
+    // The payment is committed by here, so the claim stays whatever happens
+    // A failure leaves the row in flight and the retry gets a 409 telling the
+    // caller to ask again, which costs them a round trip and never a duplicate
+    await this.prisma.idempotencyKey.update({
+      where: {
+        merchantId_key: { merchantId: call.merchantId, key: call.key },
+      },
+      data: {
+        responseStatus: call.successStatus,
+        responseBody: result as Prisma.InputJsonValue,
+      },
+    });
+
+    return result;
   }
 
   // Written before the work, not after

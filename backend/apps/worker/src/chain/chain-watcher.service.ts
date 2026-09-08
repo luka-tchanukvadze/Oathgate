@@ -39,8 +39,12 @@ export class ChainWatcherService {
       const watched = await this.watchedPayments();
 
       // A sweep with nothing to watch still ran, so it still counts as alive
-      if (watched.length > 0) {
-        await this.poll(watched);
+      if (watched.length > 0 && !(await this.poll(watched))) {
+        // Nothing is recorded, and the silence is what raises the alarm
+        // A sweep that asked about every address and was refused every time
+        // has learned nothing about the chain, so calling it alive is how a
+        // watcher that cannot see passes for one with nothing to see
+        return;
       }
 
       // Last, so it only records a sweep that got all the way through. A
@@ -52,17 +56,22 @@ export class ChainWatcherService {
     }
   }
 
-  private async poll(watched: WatchedPayment[]): Promise<void> {
+  // True when at least one address was actually looked at
+  // The caller needs to tell a sweep that found nothing from one that could not
+  // look, and swallowing every failure made those two identical
+  private async poll(watched: WatchedPayment[]): Promise<boolean> {
     // Once per sweep, not once per payment
     // 25 payments would otherwise be 50 requests instead of 26
     const tip = await this.chain.tipHeight();
 
     let seen = 0;
+    let checked = 0;
 
     for (const payment of watched) {
       // One address failing cannot end the sweep for the other 24
       try {
         seen += await this.check(payment, tip);
+        checked += 1;
       } catch (error) {
         this.logger.warn(
           `could not check ${payment.address}: ${String(error)}`,
@@ -83,9 +92,19 @@ export class ChainWatcherService {
       this.logger.log(`recorded ${seen} chain transactions`);
     }
 
+    if (checked === 0) {
+      this.logger.error(`all ${watched.length} address checks failed`);
+
+      return false;
+    }
+
     // Proof of life in the log as well as in the heartbeat, because a quiet
     // sweep and a broken one look identical from outside
-    this.logger.debug(`polled ${watched.length} addresses at tip ${tip}`);
+    this.logger.debug(
+      `polled ${checked} of ${watched.length} addresses at tip ${tip}`,
+    );
+
+    return true;
   }
 
   // Only what can still change

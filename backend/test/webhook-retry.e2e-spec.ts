@@ -7,6 +7,7 @@ import {
   expect,
   it,
 } from '@jest/globals';
+import { lookup } from 'node:dns';
 import { createServer, type Server } from 'node:http';
 import { ConfigModule } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -44,8 +45,10 @@ describe('webhook delivery when the merchant is down', () => {
       // The endpoint under test is on 127.0.0.1, which the real check refuses
       // These tests are about the retry schedule, not about where a webhook is
       // allowed to point, and that policy has its own tests
+      // The lookup is never reached, because an address in the url needs no
+      // resolving, but it is replaced too so the seam is the whole policy
       .overrideProvider(OutboundHostService)
-      .useValue({ assertAllowed: () => Promise.resolve() })
+      .useValue({ assertAllowed: () => Promise.resolve(), lookup })
       .compile();
 
     await moduleRef.init();

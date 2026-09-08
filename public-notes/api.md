@@ -180,7 +180,7 @@ side of it you are on.
 | `POST /api/dashboard/webhook-deliveries/:id/replay` | Queues it again. Returns 202 |
 | `GET /api/dashboard/search/payments?mode=TEST&q=...` | Payments matching an id, a reference, an address, or a question in plain English. Twenty a minute |
 | `GET /api/dashboard/search/availability` | Whether the search box can read a sentence at the moment |
-| `GET /api/dashboard/status` | Whether the background jobs that move money are still running, and what stops being true while one is not |
+| `GET /api/dashboard/status` | Whether the parts a payment depends on are working, and what stops being true while one is not |
 
 The detail route returns four things in one response on purpose. Four separate
 calls would each read at their own moment, and a settlement landing between two

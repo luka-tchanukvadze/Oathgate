@@ -5,7 +5,7 @@ import { AlertTriangle } from 'lucide-react';
 import { getStatus, queryKeys } from '@/lib/api';
 
 // Nothing on any screen used to say a background job had stopped. The chain
-// watcher was dead for hours once and the first sign was a failure somewhere
+// watcher was quiet for hours once and the first sign was a failure somewhere
 // else entirely, so this exists to make quiet failures loud
 //
 // It says what stopped being true rather than which service is down, because a
@@ -39,8 +39,8 @@ export function JobBanner() {
       <div className="min-w-0">
         <p className="font-semibold">
           {stalled.length === 1
-            ? `${stalled[0].label} has stopped`
-            : `${stalled.length} background jobs have stopped`}
+            ? `${stalled[0].label} is not working right now`
+            : `${stalled.length} parts of the gateway are not working right now`}
         </p>
         <ul className="mt-1 space-y-0.5 leading-relaxed">
           {stalled.map((job) => (

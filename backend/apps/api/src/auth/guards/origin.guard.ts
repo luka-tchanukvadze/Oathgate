@@ -23,9 +23,13 @@ export class OriginGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<Request>();
 
+    // Express matches a route whatever its capitalisation and passes the path
+    // on as it was typed, so anything deciding on the path normalises it first
+    const path = request.path.toLowerCase();
+
     if (
       SAFE_METHODS.has(request.method) ||
-      !request.path.startsWith(COOKIE_AUTH_PREFIX)
+      !path.startsWith(COOKIE_AUTH_PREFIX)
     ) {
       return true;
     }

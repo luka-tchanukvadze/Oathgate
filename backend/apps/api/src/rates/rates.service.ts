@@ -33,6 +33,17 @@ export class RatesService {
   // This wants to move to Redis now that two processes could disagree
   private readonly cache = new Map<string, CachedRate>();
 
+  // Whether the last attempt produced a price at all, which is the one thing
+  // that decides if a payment can be created
+  // The outcome and not the age, because nothing fetches a rate on a schedule:
+  // on a quiet morning the newest price is hours old and still perfectly good,
+  // so age would report an outage that is really just nobody buying anything
+  private quotable = true;
+
+  canQuote(): boolean {
+    return this.quotable;
+  }
+
   constructor(
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
@@ -54,6 +65,7 @@ export class RatesService {
       const rate = await this.fetchRate(fiatCurrency, cryptoCurrency);
       this.cache.set(key, { rate, fetchedAt: now });
       await this.remember(key, rate, now);
+      this.quotable = true;
 
       return rate;
     } catch (error) {
@@ -62,14 +74,19 @@ export class RatesService {
       // gateway that cannot quote at all
       const fallback = cached ?? (await this.lastKnown(key));
 
+      // Still healthy, because a payment can still be priced
+      // The fallback is the whole point of keeping the last price
       if (fallback && now - fallback.fetchedAt < STALE_CEILING_MS) {
         this.logger.warn(`serving a stale ${key} rate, upstream is failing`);
         this.cache.set(key, fallback);
+        this.quotable = true;
 
         return fallback.rate;
       }
 
       this.logger.error(`no usable ${key} rate: ${String(error)}`);
+      this.quotable = false;
+
       throw new ServiceUnavailableException('no usable exchange rate');
     }
   }

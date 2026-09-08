@@ -20,12 +20,12 @@ export class StatusController {
 
   @Get()
   async status() {
-    const { healthy, jobs } = await this.health.check();
+    const { healthy, checks } = await this.health.check();
 
     return {
       healthy,
-      degraded: jobs
-        .filter((job) => !job.healthy)
+      degraded: checks
+        .filter((check) => !check.healthy)
         .map(({ label, effect }) => ({ label, effect })),
       // The same value the mark in the search box already shows every visitor,
       // so publishing it reveals nothing new. When it was last confirmed is

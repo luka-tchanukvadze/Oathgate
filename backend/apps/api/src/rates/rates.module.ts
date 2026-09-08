@@ -8,6 +8,6 @@ import { RatesService } from './rates.service';
   imports: [AuthModule],
   controllers: [QuoteController],
   providers: [RatesService, QuoteService],
-  exports: [QuoteService],
+  exports: [QuoteService, RatesService],
 })
 export class RatesModule {}

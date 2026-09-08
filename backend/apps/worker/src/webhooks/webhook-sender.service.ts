@@ -1,3 +1,5 @@
+import http from 'node:http';
+import https from 'node:https';
 import { Injectable, Logger } from '@nestjs/common';
 import {
   BACKOFF_SECONDS,
@@ -79,6 +81,10 @@ export class WebhookSenderService {
     );
   }
 
+  // node's own http client rather than fetch, because this is the only way to
+  // choose the resolver the socket uses
+  // fetch would look the name up again itself, and a check that ran before it
+  // says nothing about the address it then connected to
   private async post(
     url: string,
     body: string,
@@ -86,41 +92,70 @@ export class WebhookSenderService {
   ): Promise<SendOutcome> {
     const startedAt = Date.now();
 
+    const finish = (outcome: Omit<SendOutcome, 'durationMs'>): SendOutcome => ({
+      ...outcome,
+      durationMs: Date.now() - startedAt,
+    });
+
+    const failed = (error: unknown): SendOutcome =>
+      finish({ ok: false, status: null, error: String(error).slice(0, 500) });
+
     try {
       // Checked here and not only at registration, because a name can be
       // repointed at a private address after the url was accepted
-      // A refusal lands in the catch below and is recorded like any other
-      // failed attempt, so the delivery retries and then dead letters
+      // A refusal is recorded like any other failed attempt, so the delivery
+      // retries and then dead letters
       await this.hosts.assertAllowed(url);
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', ...headers },
-        body,
-        signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
-        // Redirects are not followed
-        // A url that passed the check could still 302 to 169.254.169.254
-        // A 3xx counts as a failure here anyway
-        redirect: 'manual',
+      const status = await this.send(new URL(url), body, headers);
+
+      // A 3xx is not followed
+      // A url that passed the check could still redirect to 169.254.169.254,
+      // and a redirect counts as a failure here anyway
+      return finish({ ok: status >= 200 && status < 300, status, error: null });
+    } catch (error) {
+      return failed(error);
+    }
+  }
+
+  private send(
+    url: URL,
+    body: string,
+    headers: Record<string, string>,
+  ): Promise<number> {
+    const transport = url.protocol === 'https:' ? https : http;
+
+    return new Promise<number>((resolve, reject) => {
+      const request = transport.request(
+        url,
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', ...headers },
+          // The addresses this resolves are the addresses it connects to, so
+          // nothing can move between the check and the connection
+          lookup: this.hosts.lookup,
+          // No pooling, or a later delivery could inherit a socket opened
+          // before the name was repointed
+          agent: false,
+          timeout: SEND_TIMEOUT_MS,
+        },
+        (response) => {
+          // Nothing reads the body, and leaving it unread holds the socket open
+          response.resume();
+
+          resolve(response.statusCode ?? 0);
+        },
+      );
+
+      // The timeout only fires the event, so the socket has to be torn down
+      // here or the delivery waits for the merchant's server for ever
+      request.on('timeout', () => {
+        request.destroy(new Error(`no answer within ${SEND_TIMEOUT_MS}ms`));
       });
 
-      // Nothing reads the body, and leaving it unread holds the socket open
-      await response.body?.cancel();
-
-      return {
-        ok: response.status >= 200 && response.status < 300,
-        status: response.status,
-        error: null,
-        durationMs: Date.now() - startedAt,
-      };
-    } catch (error) {
-      return {
-        ok: false,
-        status: null,
-        error: String(error).slice(0, 500),
-        durationMs: Date.now() - startedAt,
-      };
-    }
+      request.on('error', reject);
+      request.end(body);
+    });
   }
 
   private async record(
