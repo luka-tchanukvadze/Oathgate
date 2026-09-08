@@ -21,6 +21,12 @@ export class ExpiryService {
         where: {
           status: PaymentStatus.PENDING,
           expiresAt: { lt: new Date() },
+          // Nothing seen on chain, checked here rather than trusted from the
+          // status. Recording a transaction and moving the payment out of
+          // PENDING are two steps, and this sweep runs on its own timer, so it
+          // could land between them and expire a payment somebody had paid.
+          // Settlement then refuses it and the coins sit against a dead row
+          chainTxs: { none: {} },
         },
         data: { status: PaymentStatus.EXPIRED },
       });

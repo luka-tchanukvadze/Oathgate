@@ -27,6 +27,10 @@ export async function getCheckout(paymentId: string): Promise<Checkout | null> {
       confirmations: mock
         .chainTxs(paymentId)
         .reduce((max, tx) => Math.max(max, tx.confirmations), 0),
+      receivedAmount: mock
+        .chainTxs(paymentId)
+        .reduce((total, tx) => total + BigInt(tx.amount), 0n)
+        .toString(),
       canSimulate: payment.mode === 'TEST',
     });
   }

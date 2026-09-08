@@ -134,7 +134,7 @@ export default function LandingPage() {
               <div className="mt-9 flex flex-wrap items-center gap-3">
                 <StartSandboxButton className="inline-flex h-12 items-center gap-2 rounded-full bg-(--hero-accent) px-6 text-sm font-semibold text-white transition-transform hover:scale-[1.03] disabled:scale-100 disabled:opacity-70" />
                 <Link
-                  href="/dashboard/guide"
+                  href="/guide"
                   className="inline-flex h-12 items-center rounded-full px-6 text-sm font-semibold text-(--hero-ink) ring-1 ring-(--hero-line) transition-colors hover:bg-white/5"
                 >
                   Read the integration guide

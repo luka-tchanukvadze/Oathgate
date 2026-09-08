@@ -54,10 +54,14 @@ COPY --from=build /app/apps/notifications/prisma ./apps/notifications/prisma
 COPY --from=build /app/apps/notifications/prisma.config.ts ./apps/notifications/prisma.config.ts
 
 # The seed is the one thing that runs from source rather than from dist, and it
-# imports the generated client by relative path
-# A megabyte of generated code, and without it there is no merchant and no
-# house accounts, so nothing can settle
-COPY --from=build /app/libs/shared/src/generated ./libs/shared/src/generated
+# reaches into libs by relative path: the generated client, and the api key
+# helper next to it. Without them there is no merchant and no house accounts,
+# so nothing can settle
+#
+# The whole of shared/src rather than the two folders it names today, because
+# the failure mode is a seed that only breaks inside the image, which is the
+# most expensive place to find out
+COPY --from=build /app/libs/shared/src ./libs/shared/src
 
 USER oathgate
 

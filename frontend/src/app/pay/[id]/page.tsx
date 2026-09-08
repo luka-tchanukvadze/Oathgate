@@ -96,6 +96,13 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
   const settled = payment.status === 'PAID';
   const confirming = payment.status === 'CONFIRMING';
 
+  // CONFIRMING only says coins were seen, not that they were enough. Half an
+  // amount confirms just as deeply as all of it, and telling somebody who sent
+  // half that nothing else is needed is the worst sentence on this page
+  const owed = BigInt(payment.cryptoAmount);
+  const received = BigInt(payment.receivedAmount);
+  const short = confirming && received < owed;
+
   // A pending payment whose clock has run out is expired to a customer even
   // though the sweep has not reached the row yet. The price it was quoted is
   // gone either way, so it should not still be asking for coins
@@ -133,6 +140,39 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
             <p className="max-w-xs text-sm text-ink-subtle">
               Confirmed on chain and settled to the merchant.
             </p>
+          </div>
+        ) : short ? (
+          // The address stays, because this is the one confirming case where
+          // the customer does still have something to do
+          <div className="px-5 py-6 sm:px-6">
+            <div className="flex flex-col items-center gap-3 text-center">
+              <span
+                className="grid size-14 place-items-center rounded-full"
+                style={{ backgroundColor: 'var(--warn-bg)', color: 'var(--warn-fg)' }}
+              >
+                <Clock className="size-7" aria-hidden />
+              </span>
+              <p className="text-base font-semibold text-ink">Part of this payment arrived</p>
+              <p className="mono text-sm text-ink">
+                {formatCrypto(received.toString(), payment.cryptoCurrency)} of{' '}
+                {formatCrypto(payment.cryptoAmount, payment.cryptoCurrency)}{' '}
+                {payment.cryptoCurrency}
+              </p>
+              <p className="max-w-xs text-sm text-ink-subtle">
+                Send the remaining{' '}
+                <span className="mono text-ink">
+                  {formatCrypto((owed - received).toString(), payment.cryptoCurrency)}{' '}
+                  {payment.cryptoCurrency}
+                </span>{' '}
+                to the same address to finish it.
+              </p>
+            </div>
+
+            <div className="mt-5 rounded-well bg-surface-muted p-3.5">
+              <p className="mb-1 text-xs text-ink-subtle">To this address</p>
+              <code className="mono block break-all text-xs text-ink">{payment.address}</code>
+              <CopyButton value={payment.address} label="Copy address" className="-ml-2 mt-1.5" />
+            </div>
           </div>
         ) : confirming ? (
           // They have already sent the coins. Showing the address again would

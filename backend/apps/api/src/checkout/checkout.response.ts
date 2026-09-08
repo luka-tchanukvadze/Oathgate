@@ -29,6 +29,12 @@ export function toCheckoutResponse(
       (max, tx) => Math.max(max, tx.confirmations),
       0,
     ),
+    // What has actually arrived, against the cryptoAmount above
+    // A customer who sent half is still CONFIRMING, and without this the page
+    // cannot tell them apart from one who sent all of it
+    receivedAmount: payment.chainTxs
+      .reduce((total, tx) => total + BigInt(tx.amount.toFixed(0)), 0n)
+      .toString(),
     // Whether the button that stands in for a wallet is offered at all
     canSimulate: payment.mode === 'TEST',
   };

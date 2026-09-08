@@ -205,5 +205,7 @@ export interface Checkout {
   createdAt: string;
   updatedAt: string;
   confirmations: number;
+  // Base units seen on chain so far, against cryptoAmount above
+  receivedAmount: string;
   canSimulate: boolean;
 }

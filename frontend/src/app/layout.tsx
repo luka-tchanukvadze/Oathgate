@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     template: '%s | Oathgate',
   },
   description:
-    'A crypto payment gateway with a double entry ledger, idempotent APIs, signed webhooks and reorg-safe settlement.',
+    'A crypto payment gateway with a double entry ledger, idempotent APIs, signed webhooks, and reversals that undo a settlement without deleting anything.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
