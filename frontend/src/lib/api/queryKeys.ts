@@ -16,6 +16,7 @@ export const queryKeys = {
   checkout: (paymentId: string) => ['checkout', paymentId] as const,
   search: (mode: KeyMode, term: string) => ['search', mode, term] as const,
   aiAvailability: () => ['ai-availability'] as const,
+  status: () => ['status'] as const,
 };
 
 export const extraKeys = {

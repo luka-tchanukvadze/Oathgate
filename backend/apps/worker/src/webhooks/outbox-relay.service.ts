@@ -4,6 +4,8 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { Queue } from 'bullmq';
 import type { DomainEvent } from '@app/contracts';
 import {
+  HeartbeatService,
+  OUTBOX_RELAY,
   type Enqueueable,
   enqueueDeliveries,
   EventPublisher,
@@ -35,6 +37,7 @@ export class OutboxRelayService {
     private readonly prisma: PrismaService,
     private readonly publisher: EventPublisher,
     @InjectQueue(WEBHOOK_QUEUE) private readonly queue: Queue,
+    private readonly heartbeat: HeartbeatService,
   ) {}
 
   // Two ticks overlapping is fine, see the claim query below
@@ -59,6 +62,8 @@ export class OutboxRelayService {
       }
 
       await this.publisher.publish(events);
+
+      await this.heartbeat.beat(OUTBOX_RELAY);
     } catch (error) {
       // Swallowed
       // The rows are still unpublished and the next tick is 5 seconds away

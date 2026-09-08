@@ -9,6 +9,7 @@ import { SidebarNav } from './sidebar';
 import { BottomNav } from './bottom-nav';
 import { Logo } from './logo';
 import { AccountMenu } from './account-menu';
+import { JobBanner } from './job-banner';
 import { getMerchant } from '@/lib/api/merchant';
 import { getAiAvailability } from '@/lib/api/search';
 import { queryKeys } from '@/lib/api/queryKeys';
@@ -159,6 +160,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           {/* pb clears the phone tab bar. Without it the last row of a table
               sits under the blur and cannot be read or tapped */}
           <main id="main" className="w-full px-4 pb-28 pt-7 sm:px-6 sm:pt-9 lg:px-8 lg:pb-9">
+            {/* Above the page, not inside it, because a job that has stopped is
+                true on every screen rather than on one of them */}
+            <JobBanner />
             {children}
           </main>
         </div>

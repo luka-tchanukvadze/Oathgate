@@ -6,6 +6,8 @@ export * from './auth/api-key';
 export * from './common/page';
 export * from './events/event-publisher.service';
 export * from './events/events.module';
+export * from './health/heartbeat.service';
+export * from './health/health.module';
 export * from './ledger/accounts.service';
 export * from './ledger/ledger.module';
 export * from './ledger/ledger.service';

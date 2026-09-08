@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import {
   EventsModule,
+  HealthModule,
   PrismaModule,
   QueueModule,
   SecretCipher,
@@ -27,6 +28,7 @@ import { WebhookSenderService } from './webhooks/webhook-sender.service';
     ScheduleModule.forRoot(),
     PrismaModule,
     QueueModule,
+    HealthModule,
     EventsModule,
     SettlementModule,
   ],

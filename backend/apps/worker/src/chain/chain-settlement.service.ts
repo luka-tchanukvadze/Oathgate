@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import {
+  CHAIN_SETTLEMENT,
+  HeartbeatService,
   KeyMode,
   PaymentStatus,
   type Prisma,
@@ -35,6 +37,7 @@ export class ChainSettlementService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly settlement: SettlementService,
+    private readonly heartbeat: HeartbeatService,
   ) {}
 
   // Separate from the watcher on purpose
@@ -62,16 +65,17 @@ export class ChainSettlementService {
         },
       });
 
-      if (candidates.length === 0) {
-        return;
+      // Nothing to weigh is still a sweep that ran
+      if (candidates.length > 0) {
+        // Same reason as the watcher, a quiet sweep and a broken one look alike
+        this.logger.debug(`weighing ${candidates.length} payments`);
+
+        for (const payment of candidates) {
+          await this.decide(payment);
+        }
       }
 
-      // Same reason as the watcher, a quiet sweep and a broken one look alike
-      this.logger.debug(`weighing ${candidates.length} payments`);
-
-      for (const payment of candidates) {
-        await this.decide(payment);
-      }
+      await this.heartbeat.beat(CHAIN_SETTLEMENT);
     } catch (error) {
       this.logger.error(`settlement sweep failed: ${String(error)}`);
     }

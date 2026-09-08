@@ -1,6 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { KeyMode, PaymentStatus, PrismaService } from '@app/shared';
+import {
+  CHAIN_WATCHER,
+  HeartbeatService,
+  KeyMode,
+  PaymentStatus,
+  PrismaService,
+} from '@app/shared';
 import { BlockstreamClient } from './blockstream.client';
 import { ADDRESS_TX_PAGE } from './chain.constants';
 import type { ChainTransaction } from './chain.types';
@@ -14,6 +20,9 @@ const BATCH_SIZE = 25;
 // not, and an observation I never record is one I can never go back for
 const LATE_WINDOW_MS = 60 * 60_000;
 
+// What the sweep needs off a payment, and nothing more
+type WatchedPayment = { id: string; address: string; cryptoCurrency: string };
+
 @Injectable()
 export class ChainWatcherService {
   private readonly logger = new Logger(ChainWatcherService.name);
@@ -21,6 +30,7 @@ export class ChainWatcherService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly chain: BlockstreamClient,
+    private readonly heartbeat: HeartbeatService,
   ) {}
 
   @Cron(CronExpression.EVERY_30_SECONDS)
@@ -28,46 +38,54 @@ export class ChainWatcherService {
     try {
       const watched = await this.watchedPayments();
 
-      if (watched.length === 0) {
-        return;
+      // A sweep with nothing to watch still ran, so it still counts as alive
+      if (watched.length > 0) {
+        await this.poll(watched);
       }
 
-      // Once per sweep, not once per payment
-      // 25 payments would otherwise be 50 requests instead of 26
-      const tip = await this.chain.tipHeight();
-
-      let seen = 0;
-
-      for (const payment of watched) {
-        // One address failing cannot end the sweep for the other 24
-        try {
-          seen += await this.check(payment, tip);
-        } catch (error) {
-          this.logger.warn(
-            `could not check ${payment.address}: ${String(error)}`,
-          );
-        }
-      }
-
-      // Stamped whether or not each check succeeded, and in one statement
-      // rather than per payment
-      // An address the explorer keeps refusing would otherwise stay at the
-      // front of the queue and starve everything behind it
-      await this.prisma.payment.updateMany({
-        where: { id: { in: watched.map((payment) => payment.id) } },
-        data: { lastCheckedAt: new Date() },
-      });
-
-      if (seen > 0) {
-        this.logger.log(`recorded ${seen} chain transactions`);
-      }
-
-      // Proof of life, because a quiet sweep and a broken one look identical
-      // Without this I cannot tell nothing arrived from nothing is polling
-      this.logger.debug(`polled ${watched.length} addresses at tip ${tip}`);
+      // Last, so it only records a sweep that got all the way through. A
+      // heartbeat written before the work would say alive about a job that is
+      // failing every time
+      await this.heartbeat.beat(CHAIN_WATCHER);
     } catch (error) {
       this.logger.error(`chain sweep failed: ${String(error)}`);
     }
+  }
+
+  private async poll(watched: WatchedPayment[]): Promise<void> {
+    // Once per sweep, not once per payment
+    // 25 payments would otherwise be 50 requests instead of 26
+    const tip = await this.chain.tipHeight();
+
+    let seen = 0;
+
+    for (const payment of watched) {
+      // One address failing cannot end the sweep for the other 24
+      try {
+        seen += await this.check(payment, tip);
+      } catch (error) {
+        this.logger.warn(
+          `could not check ${payment.address}: ${String(error)}`,
+        );
+      }
+    }
+
+    // Stamped whether or not each check succeeded, and in one statement rather
+    // than per payment
+    // An address the explorer keeps refusing would otherwise stay at the front
+    // of the queue and starve everything behind it
+    await this.prisma.payment.updateMany({
+      where: { id: { in: watched.map((payment) => payment.id) } },
+      data: { lastCheckedAt: new Date() },
+    });
+
+    if (seen > 0) {
+      this.logger.log(`recorded ${seen} chain transactions`);
+    }
+
+    // Proof of life in the log as well as in the heartbeat, because a quiet
+    // sweep and a broken one look identical from outside
+    this.logger.debug(`polled ${watched.length} addresses at tip ${tip}`);
   }
 
   // Only what can still change
@@ -77,7 +95,7 @@ export class ChainWatcherService {
   // through everything eligible instead of re-reading the same 25. Ordering by
   // creation meant twenty five unpaid payments could sit at the front for ever
   // and a newer one, with a customer actually paying it, was never checked
-  private async watchedPayments() {
+  private async watchedPayments(): Promise<WatchedPayment[]> {
     const lateWindow = new Date(Date.now() - LATE_WINDOW_MS);
 
     return this.prisma.payment.findMany({
@@ -102,10 +120,7 @@ export class ChainWatcherService {
     });
   }
 
-  private async check(
-    payment: { id: string; address: string; cryptoCurrency: string },
-    tip: number,
-  ): Promise<number> {
+  private async check(payment: WatchedPayment, tip: number): Promise<number> {
     const transactions = await this.chain.addressTransactions(payment.address);
 
     let written = 0;
