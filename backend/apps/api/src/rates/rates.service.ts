@@ -4,7 +4,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Prisma } from '@app/shared';
+import { Prisma, PrismaService } from '@app/shared';
 
 // 1 minute
 // The free upstream tier rate-limits hard
@@ -33,7 +33,10 @@ export class RatesService {
   // This wants to move to Redis now that two processes could disagree
   private readonly cache = new Map<string, CachedRate>();
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async getRate(
     fiatCurrency: string,
@@ -50,17 +53,64 @@ export class RatesService {
     try {
       const rate = await this.fetchRate(fiatCurrency, cryptoCurrency);
       this.cache.set(key, { rate, fetchedAt: now });
+      await this.remember(key, rate, now);
 
       return rate;
     } catch (error) {
-      if (cached && now - cached.fetchedAt < STALE_CEILING_MS) {
-        this.logger.warn(`serving a stale ${key} rate, upstream is failing`);
+      // Memory first, then the database. After a restart the map is empty and
+      // the row is the only thing standing between a slow upstream and a
+      // gateway that cannot quote at all
+      const fallback = cached ?? (await this.lastKnown(key));
 
-        return cached.rate;
+      if (fallback && now - fallback.fetchedAt < STALE_CEILING_MS) {
+        this.logger.warn(`serving a stale ${key} rate, upstream is failing`);
+        this.cache.set(key, fallback);
+
+        return fallback.rate;
       }
 
       this.logger.error(`no usable ${key} rate: ${String(error)}`);
       throw new ServiceUnavailableException('no usable exchange rate');
+    }
+  }
+
+  // Writing the price is not what the caller asked for, so a database that is
+  // struggling costs them a slower answer and never the answer itself
+  private async remember(
+    pair: string,
+    rate: Prisma.Decimal,
+    fetchedAt: number,
+  ): Promise<void> {
+    const row = { rate, fetchedAt: new Date(fetchedAt) };
+
+    try {
+      await this.prisma.exchangeRate.upsert({
+        where: { pair },
+        create: { pair, ...row },
+        update: row,
+      });
+    } catch (error) {
+      this.logger.warn(`could not store the ${pair} rate: ${String(error)}`);
+    }
+  }
+
+  private async lastKnown(pair: string): Promise<CachedRate | null> {
+    try {
+      const stored = await this.prisma.exchangeRate.findUnique({
+        where: { pair },
+      });
+
+      if (!stored) {
+        return null;
+      }
+
+      return { rate: stored.rate, fetchedAt: stored.fetchedAt.getTime() };
+    } catch (error) {
+      this.logger.warn(
+        `could not read a stored ${pair} rate: ${String(error)}`,
+      );
+
+      return null;
     }
   }
 

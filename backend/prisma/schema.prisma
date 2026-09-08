@@ -298,6 +298,20 @@ model MerchantSession {
 
 // Stops a retried request creating a second payment. First response is stored
 // and replayed
+// The last price I successfully fetched for a pair
+//
+// Kept here as well as in memory because the ten minute stale window exists for
+// exactly the moment the upstream is failing, and an empty cache is when it is
+// needed most. A restart used to leave the gateway with nothing to fall back on,
+// so a deploy plus one slow request was a 503 and no payment could be quoted
+model ExchangeRate {
+  pair      String   @id @db.VarChar(24)
+  rate      Decimal  @db.Decimal(38, 18)
+  fetchedAt DateTime @db.Timestamptz(3)
+
+  @@map("exchange_rate")
+}
+
 model IdempotencyKey {
   id         String   @id @default(uuid(7)) @db.Uuid
   merchantId String   @db.Uuid

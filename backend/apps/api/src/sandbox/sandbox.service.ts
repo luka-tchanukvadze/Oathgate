@@ -110,14 +110,45 @@ export class SandboxService {
       },
     });
 
-    await this.endpoint(merchant.id);
-    await this.seed(merchant.id);
+    // Seeding quotes every payment, so an upstream that is down fails here,
+    // after the merchant and its account are already written. Expiring the
+    // workspace hands it to the sweep that already revokes sandboxes, rather
+    // than deleting rows, because some of what seeding writes is ledger
+    // entries and those are not mine to remove
+    //
+    // Nobody is ever handed this one: the session cookie is only minted after
+    // this method returns
+    try {
+      await this.endpoint(merchant.id);
+      await this.seed(merchant.id);
+    } catch (error) {
+      await this.abandon(merchant.id);
+
+      throw error;
+    }
 
     this.logger.log(
       `sandbox ${merchant.id} for ${name}, until ${expiresAt.toISOString()}`,
     );
 
     return { merchantId: merchant.id, expiresAt };
+  }
+
+  private async abandon(merchantId: string): Promise<void> {
+    this.logger.warn(`sandbox ${merchantId} failed to seed, expiring it`);
+
+    try {
+      await this.prisma.merchant.update({
+        where: { id: merchantId },
+        data: { expiresAt: new Date() },
+      });
+    } catch (error) {
+      // Swallowed, because the failure being reported is the one that matters
+      // and an unswept row costs nothing but space
+      this.logger.error(
+        `could not expire the abandoned sandbox: ${String(error)}`,
+      );
+    }
   }
 
   // Written straight to the table rather than through WebhooksService, because
