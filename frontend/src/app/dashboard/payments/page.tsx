@@ -3,7 +3,7 @@
 import { Suspense, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, Plus, Sparkles, X } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
@@ -49,6 +49,7 @@ const CURL = `curl -X POST https://oathgate-api.tchanu.com/api/v1/payments \\
 
 function PaymentsInner() {
   const { mode } = useMode();
+  const queryClient = useQueryClient();
   const params = useSearchParams();
   // Left in the case it was typed, because the backend may read it as a
   // sentence and lowercasing it here would only make that harder
@@ -80,7 +81,17 @@ function PaymentsInner() {
   // for and not on a timer
   const results = useQuery({
     queryKey: queryKeys.search(mode, search),
-    queryFn: () => searchPayments(mode, search),
+    queryFn: async () => {
+      const found = await searchPayments(mode, search);
+
+      // A sentence the model just read is fresher proof than the mark's check
+      // Only a yes is written, since ids and order numbers skip the model
+      if (found.usedAi) {
+        queryClient.setQueryData(queryKeys.aiAvailability(), { ai: true });
+      }
+
+      return found;
+    },
     enabled: searching,
     staleTime: 30_000,
     refetchOnWindowFocus: false,
