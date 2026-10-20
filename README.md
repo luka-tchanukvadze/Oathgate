@@ -12,6 +12,7 @@ redeploys itself when I push.
 
 - **Live dashboard:** https://oathgate.tchanu.com
 - **Live API:** https://oathgate-api.tchanu.com/api
+- **Screenshots:** images of the live version are at the end of this README, see [Sneak Peek](#sneak-peek).
 
 > Bitcoin **signet** only, which is a test network. No real money moves through
 > this, and the live wallet is not configured on the deployed instance.
@@ -229,3 +230,17 @@ is, but only one is connected.
 
 Oathgate is built to the standard I would want in production, and it has not
 carried production traffic.
+
+## Sneak Peek
+
+Screenshots of the live version. The real project does more than what is shown here, and if the live demo has issues before I get a chance to fix it, you can still take a look here.
+
+![Landing page](screenshots/01-landing.png)
+
+![Merchant dashboard](screenshots/02-dashboard.png)
+
+![Payment detail](screenshots/03-payment-detail.png)
+
+![Balance and ledger](screenshots/04-balance-ledger.png)
+
+![Webhooks](screenshots/05-webhooks.png)
